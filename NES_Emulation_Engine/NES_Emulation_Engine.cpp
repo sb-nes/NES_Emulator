@@ -1,4 +1,4 @@
-// NES_OLC.cpp : 'main' function -> Program Execution Entry Point.
+// NES_Emulation_Engine.cpp : 'main' function -> Program Execution Entry Point.
 
 #include <iostream>
 #include <crtdbg.h>
