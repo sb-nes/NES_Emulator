@@ -8,138 +8,35 @@
 namespace NES::CPU {
 	namespace {
 
+		const char hexChar[] = "0123456789ABCDEF";
+
+		std::string hexString(u32 value, u8 length) {
+			std::string t(length, '0');
+
+			for (int i{ length - 1 }; i >= 0; --i, value >>= 4) {
+				t[i] = hexChar[value & 0xF];
+			}
+
+			return "0x" + t;
+		}
+
+		std::string binString(u32 value, u8 length) {
+			std::string t(length, '0');
+
+			for (int i{ length - 1 }; i >= 0; --i, value >>= 1) {
+				t[i] = value & 0x1 ? '1' : '0';
+			}
+
+			return "0x" + t;
+		}
 
 	} // anonymous namespace
 
-	// If the opcodes and addressing modes are not implemented, then linker will throw a LINK2019 code while assigning their function pointer to lookup.
+	// WARNING: If the opcodes and addressing modes are not implemented, then linker will throw a LINK2019 code while assigning their function pointer to lookup.
 
-	// Addressing Modes | https://www.nesdev.org/wiki/CPU_addressing_modes
-
-	u8 R6502::IMP() { // Implicit/Implied | Instructions like RTS or CLC have no address operand, the destination of results are implied.
-		assert(_cycles > 0);
-		return 0;
-	}
-	u8 R6502::ACC() {  // Implicit/Implied | The data is fetched from the accumulator to be worked upon, though not always. || is it needed?
-		assert(_cycles > 0);
-		_data = _accumulator;
-		return 0;
-	}
-	u8 R6502::IMM() { // Immediate | Uses the 8-bit operand itself as the value for the operation, rather than fetching a value from a memory address.
-		assert(_cycles > 0);
-		_data = 0x00FF & _program_counter++; // Reading costs 1 cycle
-		return 0;
-	}
-	u8 R6502::ZP0() { // Zero-Page | Fetches the value from an 8-bit address on the zero page.
-		assert(_cycles > 0);
-		_address_abs = (read(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
+	// OPDCODES/Instructions | TODO: Put all read into _data from addressing modes to opcodes
+	u8 R6502::ADC() { // Add With Carry | adds the carry flag in the status bit and a memory value to the accumulator. | A = A + memory + C | C = (result > $FF)
 		_data = read(_address_abs); // Reading costs 1 cycle
-		return 0;
-	}
-	u8 R6502::ZPX() { // Zero-Page Indexed X-Offset | Uses value stored in X-register to index in Zero Page
-		assert(_cycles > 0);
-		_address_abs = (read(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
-		_address_abs += _x_register; clock(); // Reading from X register cost 1 cycle
-		_data = read(_address_abs); // Reading costs 1 cycle
-		return 0;
-	}
-	u8 R6502::ZPY() { // Zero-Page Indexed Y-Offset | Uses value stored in Y-register to index in Zero Page
-		assert(_cycles > 0);
-		_address_abs = (read(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
-		_address_abs += _y_register; clock(); // Reading from Y register cost 1 cycle
-		_data = read(_address_abs); // Reading costs 1 cycle
-		return 0;
-	}
-	u8 R6502::REL() { // Relative | For Branching Instructions -> can't jump to anywhere in the address range; They can only jump thats in the vicinity of the branch instruction, no more than 127 memory locations
-		assert(_cycles > 0);
-		_address_rel = read(_program_counter++);
-		// NOTE: if sign bit of the unsigned address is 1, then we set all high bits to 1. -> reason, to use binary arithmetic.
-		if (_address_rel & 0x80) _address_rel |= 0xFF00;
-		return 0;
-	}
-	u8 R6502::ABS() { // Absolute | Fetches a 2-byte address from the program counter
-		assert(_cycles > 0);
-		u16 l_address = read(_program_counter++);// Reading costs 1 cycle
-		u16 h_address = read(_program_counter++);// Reading costs 1 cycle
-		_address_abs = (h_address << 8) | l_address; // h_address shifted 8 bits to the left and OR'ed with l_address
-		_data = read(_address_abs); // Reading costs 1 cycle
-		return 0;
-	}
-	u8 R6502::ABX() { // Absolute Indexed X-Offset | Uses value stored in X-register to offset the absolute address
-		assert(_cycles > 0);
-		u16 l_address = read(_program_counter++); // Reading costs 1 cycle
-		u16 h_address = read(_program_counter++); // Reading costs 1 cycle
-		_address_abs = (h_address << 8) | l_address; // h_address shifted 8 bits to the left and OR'ed with l_address
-		_address_abs += _x_register; clock(); // Reading from X register cost 1 cycle
-		_data = read(_address_abs); // Reading costs 1 cycle
-
-		if (h_address != (_address_abs >> 2)) { // if the memory Page has changed, then 
-			clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-			return 1;
-		}
-		return 0;
-	}
-	u8 R6502::ABY() { // Absolute Indexed Y-Offset | Uses value stored in Y-register to offset the absolute address
-		assert(_cycles > 0);
-		u16 l_address = read(_program_counter++); // Reading costs 1 cycle
-		u16 h_address = read(_program_counter++); // Reading costs 1 cycle
-		_address_abs = (h_address << 8) | l_address; // h_address shifted 8 bits to the left and OR'ed with l_address
-		_address_abs += _y_register; clock(); // Reading from Y register cost 1 cycle
-		_data = read(_address_abs); // Reading costs 1 cycle
-
-		if (h_address != (_address_abs >> 2)) { // if the memory Page has changed, then 
-			clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-			return 1;
-		}
-		return 0;
-	}
-	u8 R6502::IND() { // Indirect | R6502's way of implementing pointers in the NES
-		assert(_cycles > 0);
-		u16 l_address_i = read(_program_counter++); // Reading costs 1 cycle
-		u16 h_address_i = read(_program_counter++); // Reading costs 1 cycle
-		u16 address_i = (h_address_i << 8) | l_address_i; // h_address shifted 8 bits to the left and OR'ed with l_address
-
-		if (l_address_i == 0x00FF) { // Page Boundary Glitch -> Indirect JMP ($ADDR) Glitch -> Reads the wrong address when crossing a page due to 6502's memory access logic
-			_address_abs = (read(address_i & 0xFF00) << 8) | read(address_i);
-		}
-		else {
-			_address_abs = (read(address_i + 1) << 8) | read(address_i); // Reading costs 2 cycle
-		}
-		_data = read(_address_abs); // Reading costs 1 cycle
-
-		return 0;
-	}
-	u8 R6502::IZX() { // Indirect Indexed X-Offset | Question: WHY????
-		assert(_cycles > 0);
-		u16 t_i = read(_program_counter++); // Reading costs 1 cycle
-		u16 l_address_i = read((u16)(t_i + (u16)_x_register) * 0x00FF); // Reading costs 1 cycle
-		u16 h_address_i = read((u16)(t_i + (u16)_x_register + 1) * 0x00FF); // Reading costs 1 cycle
-		_address_abs = (h_address_i << 8) | l_address_i;
-		_data = read(_address_abs); // Reading costs 1 cycle
-
-		return 0;
-	}
-	u8 R6502::IZY() { // Indirect	Indexed Y-Offset | Uses value stored in Y-register to offset the indirect address/ Pointer
-		assert(_cycles > 0);
-		u16 t_i = read(_program_counter++); // Reading costs 1 cycle
-
-		u16 l_address_i = read(t_i & 0x00FF); // Reading costs 1 cycle
-		u16 h_address_i = read((t_i + 1) & 0x00FF); // Reading costs 1 cycle
-		u16 _address_abs = (h_address_i << 8) | l_address_i; // h_address shifted 8 bits to the left and OR'ed with l_address
-		_address_abs += _y_register; clock(); // Reading from Y register cost 1 cycle
-		_data = read(_address_abs); // Reading costs 1 cycle
-
-		// TODO: fix this page wrap code
-		if (h_address_i != (_address_abs >> 2)) { // if the memory Page has changed, then 
-			clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-			return 1;
-		}
-		return 0;
-	}
-
-	// Indexed addressing modes use the X or Y register to help determine the address
-
-	// OPDCODES/Instructions
-	u8 R6502::ADC() { // Add With Carry | adds the carry flag in the status bit and a memory value to the accumulator. | A = A + memory + C | C = ?
 		u16 temp = _accumulator + _data + GetFlag(StateFlags::C);
 
 		// Handle Overflow
@@ -149,6 +46,14 @@ namespace NES::CPU {
 		SetFlag(StateFlags::V, (~((u16)_accumulator ^ (u16)_data) & ((u16)_accumulator ^ (u16)temp)) & 0x0080 );
 
 		_accumulator = temp & 0x00FF;
+
+#if CPU_TEST
+		std::cout << _accumulator << " " << hexString(_accumulator, 2) << "\n";
+		std::cout << "Carry Flag: " << hexString(GetFlag(StateFlags::C), 1) << "\n";
+		std::cout << "Zero Flag: " << hexString(GetFlag(StateFlags::Z), 1) << "\n";
+		std::cout << "Overflow Flag: " << hexString(GetFlag(StateFlags::V), 1) << "\n";
+		std::cout << "Negative Flag: " << hexString(GetFlag(StateFlags::N), 1) << "\n\n";
+#endif // CPU_TEST
 
 		return 1;
 	}
@@ -351,11 +256,21 @@ namespace NES::CPU {
 
 	// TODO: Jump
 	u8 R6502::JMP() {
+		_program_counter = _address_abs;
+
+#if CPU_TEST
+		std::cout << "Jump To: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
+#endif // CPU_TEST
 		return 0;
 	}
 
 	// TODO: Jump to Subroutine
 	u8 R6502::JSR() {
+		_program_counter = _address_abs;
+
+#if CPU_TEST
+		std::cout << "Jump To Subroutine At: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
+#endif // CPU_TEST
 		return 0;
 	}
 
@@ -363,12 +278,15 @@ namespace NES::CPU {
 
 	// Load A
 	u8 R6502::LDA() { // A = memory
-		_accumulator = _data;
+		_accumulator = read(_address_abs);
+
 		SetFlag(StateFlags::Z, _accumulator == 0);
 		SetFlag(StateFlags::Z, _accumulator >> 7);
 
 #if CPU_TEST
-		std::cout << _accumulator << "\n";
+		std::cout << "Accumulator: " << _accumulator << " " << hexString(_accumulator, 2) << "\n";
+		std::cout << "Zero Flag: " << hexString(GetFlag(StateFlags::Z),1) << "\n";
+		std::cout << "Negative Flag: " << hexString(GetFlag(StateFlags::N),1) << "\n\n";
 #endif // CPU_TEST
 
 		return 0;
@@ -376,17 +294,31 @@ namespace NES::CPU {
 
 	// Load X
 	u8 R6502::LDX() { // X = memory
-		_x_register = _data;
+		_x_register = read(_address_abs);
 		SetFlag(StateFlags::Z, _x_register == 0);
 		SetFlag(StateFlags::Z, _x_register >> 7);
+
+#if CPU_TEST
+		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
+		std::cout << "Zero Flag: " << hexString(GetFlag(StateFlags::Z), 1) << "\n";
+		std::cout << "Negative Flag: " << hexString(GetFlag(StateFlags::N), 1) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
 	// Load Y
 	u8 R6502::LDY() { // Y = memory
-		_y_register = _data;
+		_y_register = read(_address_abs);
 		SetFlag(StateFlags::Z, _y_register == 0);
 		SetFlag(StateFlags::Z, _y_register >> 7);
+
+#if CPU_TEST
+		std::cout << "Y Register: " << _y_register << " " << hexString(_y_register, 2) << "\n";
+		std::cout << "Zero Flag: " << hexString(GetFlag(StateFlags::Z), 1) << "\n";
+		std::cout << "Negative Flag: " << hexString(GetFlag(StateFlags::N), 1) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 	/// END ///
@@ -418,14 +350,14 @@ namespace NES::CPU {
 
 	// Push A
 	u8 R6502::PHA() { // ($0100 + SP) = A | SP = SP - 1
-		write(0x0100 + _stack_pointer, _accumulator);
+		//write(0x0100 + _stack_pointer, _accumulator);
 		--_stack_pointer; // Decrement Stack
 		return 0;
 	}
 
 	// Push Processor Status
 	u8 R6502::PHP() { // ($0100 + SP) = NV11DIZC | SP = SP - 1 | Break pushed as 1 -> This flag exists only in the flags byte pushed to the stack, not as real state in the CPU.
-		write(0x0100 + _stack_pointer, _status_register | 0x30);
+		//write(0x0100 + _stack_pointer, _status_register | 0x30);
 		--_stack_pointer; // Decrement Stack
 		return 0;
 	}
@@ -504,18 +436,36 @@ namespace NES::CPU {
 	// Set Carry
 	u8 R6502::SEC() { // C = 1
 		SetFlag(StateFlags::C, true);
+
+#if CPU_TEST
+		std::cout << "Set Carry Status: " << "\n";
+		std::cout << "Status Register: " << binString(_status_register, 8) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
 	// Set Decimal
 	u8 R6502::SED() { // D = 1
 		SetFlag(StateFlags::D, true);
+
+#if CPU_TEST
+		std::cout << "Set Decimal Status: " << "\n";
+		std::cout << "Status Register: " << binString(_status_register, 8) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
 	// Set Interrupt Disable
 	u8 R6502::SEI() { // I = 1
 		SetFlag(StateFlags::I, true);
+
+#if CPU_TEST
+		std::cout << "Set Interrupt Disable Status: " << "\n";
+		std::cout << "Status Register: " << binString(_status_register, 8) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 	/// END ///
@@ -524,16 +474,37 @@ namespace NES::CPU {
 
 	// Store A
 	u8 R6502::STA() { // memory = A
+		_data = _accumulator;
+		write_memory(_address_abs);
+
+#if CPU_TEST
+		std::cout << "Storing Accumulator value: " << _accumulator << " " << hexString(_accumulator, 2) << " in: " << hexString(_address_abs, 4) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
 	// Store X
 	u8 R6502::STX() { // memory = X
+		_data = _x_register;
+		write_memory(_address_abs);
+
+#if CPU_TEST
+		std::cout << "Storing X Register value: " << _x_register << " " << hexString(_x_register, 2) << " in: " << hexString(_address_abs, 4) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
 	// Store Y
 	u8 R6502::STY() { // memory = Y
+		_data = _y_register;
+		write_memory(_address_abs);
+
+#if CPU_TEST
+		std::cout << "Storing Y Register value: " << _y_register << " " << hexString(_y_register, 2) << " in: " << hexString(_address_abs, 4) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
@@ -544,6 +515,14 @@ namespace NES::CPU {
 		_x_register = _accumulator;
 		SetFlag(StateFlags::Z, _x_register == 0);
 		SetFlag(StateFlags::Z, _x_register >> 7);
+
+#if CPU_TEST
+		std::cout << "Copy Accumulator to X Register: \n";
+		std::cout << "Accumulator: " << _accumulator << " " << hexString(_accumulator, 2) << "\n";
+		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
+		std::cout << "Y Register: " << _y_register << " " << hexString(_y_register, 2) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
@@ -552,6 +531,14 @@ namespace NES::CPU {
 		_y_register = _accumulator;
 		SetFlag(StateFlags::Z, _y_register == 0);
 		SetFlag(StateFlags::Z, _y_register >> 7);
+
+#if CPU_TEST
+		std::cout << "Copy Accumulator to Y Register: \n";
+		std::cout << "Accumulator: " << _accumulator << " " << hexString(_accumulator, 2) << "\n";
+		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
+		std::cout << "Y Register: " << _y_register << " " << hexString(_y_register, 2) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
@@ -560,6 +547,13 @@ namespace NES::CPU {
 		_x_register = _stack_pointer;
 		SetFlag(StateFlags::Z, _x_register == 0);
 		SetFlag(StateFlags::Z, _x_register >> 7);
+
+#if CPU_TEST
+		std::cout << "Copy Stack Pointer to X Register: \n";
+		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
+		std::cout << "Stack Pointer: " << _stack_pointer << " " << hexString(_stack_pointer, 2) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
@@ -568,12 +562,27 @@ namespace NES::CPU {
 		_accumulator = _x_register;
 		SetFlag(StateFlags::Z, _accumulator == 0);
 		SetFlag(StateFlags::Z, _accumulator >> 7);
+
+#if CPU_TEST
+		std::cout << "Copy X Register to Accumulator: \n";
+		std::cout << "Accumulator: " << _accumulator << " " << hexString(_accumulator, 2) << "\n";
+		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
+		std::cout << "Y Register: " << _y_register << " " << hexString(_y_register, 2) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
 	// Transfer X to Stack Pointer
 	u8 R6502::TXS() { // SP = X | copies the X register value to the stack pointer.
 		_stack_pointer = _x_register;
+
+#if CPU_TEST
+		std::cout << "Copy X Register to Stack Pointer: \n";
+		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
+		std::cout << "Stack Pointer: " << _stack_pointer << " " << hexString(_stack_pointer, 2) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 
@@ -582,6 +591,14 @@ namespace NES::CPU {
 		_accumulator = _y_register;
 		SetFlag(StateFlags::Z, _accumulator == 0);
 		SetFlag(StateFlags::Z, _accumulator >> 7);
+
+#if CPU_TEST
+		std::cout << "Copy Y Register to Accumulator: \n";
+		std::cout << "Accumulator: " << _accumulator << " " << hexString(_accumulator, 2) << "\n";
+		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
+		std::cout << "Y Register: " << _y_register << " " << hexString(_y_register, 2) << "\n\n";
+#endif // CPU_TEST
+
 		return 0;
 	}
 	/// END ///
@@ -589,16 +606,5 @@ namespace NES::CPU {
 	// Illegal Opcodes
 	u8 R6502::XXX() { return 0; }
 
-	// Writes to the Memory on the Address Bus
-	void R6502::write(u16 address, u8 data) {
-		_bus->write(address, data);
-		clock();
-	}
-
-	// Reads from the Memory on the Address Bus
-	u8 R6502::read(u16 address, bool bReadOnly) {
-		u8 data{ _bus->read(address) };
-		clock();
-		return data;
-	}
+	
 }

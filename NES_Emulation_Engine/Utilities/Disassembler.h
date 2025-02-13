@@ -21,13 +21,11 @@ namespace NES::Utilities {
 
 	} // anonymous namespace
 
-
 	// TODO: Build a Disasm
-	void disasm(std::array<u8, 2048> &ram) { // Disassembler
+	void disasm(std::array<u8, 2048> &ram, u32 start, u32 end) { // Disassembler - [Start, End)
+		std::cout << "\nDisassemble Memory: "<< start << "-" << end << "\n";
 
-		std::cout << "\nDisassemble Memory:\n";
-
-		for (u32 i{ 0 }; i < ram.size(); ++i) {
+		for (u32 i{ start }; i < end; ++i) {
 			std::cout << hexString(i, 4) << "\t"; // Address
 
 			if (((i + 1) & 0x0F) == 0) {
@@ -45,5 +43,8 @@ namespace NES::Utilities {
 		getchar();
 	}
 
+	void disasm(std::array<u8, 2048>& ram) { // Disassembler
+		disasm(ram, 0, ram.size());
+	}
 
 }

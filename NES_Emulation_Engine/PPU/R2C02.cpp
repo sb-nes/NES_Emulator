@@ -57,6 +57,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 		address = get_address(address);
 
 	}
+
 	// Reads from the PPU's Address Bus
 	u8 R2C02::read(u16 address, bool bReadOnly) {
 		u8 data = 0x00;

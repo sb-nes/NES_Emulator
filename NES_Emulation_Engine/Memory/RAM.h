@@ -42,6 +42,7 @@ namespace NES::Memory {
 		}
 
 		void disassemble_wram();
+		void disassemble_wram(u32 start, u32 end); // Disassembler - [Start, End)
 
 	private:
 		// WRAM - Work RAM -> 2KB Static RAM [SRAM]

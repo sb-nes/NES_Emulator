@@ -19,7 +19,6 @@ namespace NES::CPU {
 
 	// Writes to the Address Bus
 	void Bus::write(u16 address, u8 data) {
-		assert(address && data);
 		assert(address >= 0x0000 && address <= 0xFFFF);
 
 		switch (chip_select(address)) {

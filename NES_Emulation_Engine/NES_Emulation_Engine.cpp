@@ -5,6 +5,7 @@
 #include "CPU/R6502.h"
 //#include "Utilities/Disassembler.h"
 
+
 using namespace NES;
 
 int main()
@@ -13,17 +14,18 @@ int main()
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); //Google it, dammit
 #endif
 
-    std::cout << "Initializing!\n";
+    std::cout << "Initializing!\n\n";
 
     CPU::R6502* Cpu = new CPU::R6502();
 
     Cpu->SetBus(new CPU::Bus());
     Cpu->reset();
+    Cpu->set_instructions_count(15);
 
-    while (1) {
-        std::cout << "test";
-        if (getchar()) break;
+    for (; Cpu->get_instructions_count() > 0;) {
+        Cpu->clock();
     }
+    Cpu->DisassembleRAM(0, 40);
 
     delete Cpu;
 
