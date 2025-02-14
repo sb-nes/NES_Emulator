@@ -27,7 +27,7 @@ namespace NES::CPU {
 				t[i] = value & 0x1 ? '1' : '0';
 			}
 
-			return "0x" + t;
+			return "0b" + t;
 		}
 
 	} // anonymous namespace
