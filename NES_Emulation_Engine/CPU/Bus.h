@@ -33,6 +33,11 @@ namespace NES::CPU {
 #endif // RAM_TEST
 
 #if CPU_TEST
+			/// Interrupt Handler
+			_ram->write(0x0700, 0x00); // data
+			_ram->write(0x0001, 0x02); // data
+			/// END
+
 			_ram->write(0x0010, 0x02); // data
 			_ram->write(0x0015, 0x08); // data
 			_ram->write(0x0000, 0xA9); // LDA immediate
@@ -85,6 +90,37 @@ namespace NES::CPU {
 			_ram->write(0x0438, 0xF8); // SED
 			_ram->write(0x0439, 0x78); // SEI
 
+			_ram->write(0x043A, 0x18); // CLC
+			_ram->write(0x043B, 0x58); // CLI
+			_ram->write(0x043C, 0xB8); // CLV
+			_ram->write(0x043D, 0xD8); // CLD
+
+			_ram->write(0x00FA, 0xFF); // data -> Bit Mask
+			_ram->write(0x032C, 0xFA); // data
+			_ram->write(0x043E, 0xA5); // LDA ZP
+			_ram->write(0x043F, 0xFA); // data
+			_ram->write(0x0440, 0x24); // BIT ZP0
+			_ram->write(0x0441, 0x2C); // data
+			_ram->write(0x0442, 0x2C); // BIT ABS
+			_ram->write(0x0443, 0x2C); // data
+			_ram->write(0x0444, 0x03); // data
+
+			_ram->write(0x0445, 0xE8); // INX
+			_ram->write(0x0446, 0xE8); // INX
+			_ram->write(0x0447, 0xCA); // DEX
+			_ram->write(0x0448, 0xC8); // INY
+			_ram->write(0x0449, 0x88); // DEY
+
+			_ram->write(0x00AB, 0xFD); // data
+			_ram->write(0x044A, 0xA6); // LDX
+			_ram->write(0x044B, 0xAB); // Data
+			_ram->write(0x044C, 0x9A); // TXS
+
+			_ram->write(0x044D, 0xEA); // NOP
+			_ram->write(0x044E, 0x48); // PHA
+			_ram->write(0x044F, 0x08); // PHP
+			_ram->write(0x0450, 0x28); // PLP
+			_ram->write(0x0451, 0x68); // PLA
 
 #endif // CPU_TEST
 

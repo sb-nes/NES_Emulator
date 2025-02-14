@@ -13,7 +13,7 @@ namespace NES::CPU {
 		enum StateFlags : u8 {
 			C = (1 << 0),		// Carry Bit State
 			Z = (1 << 1),		// Zero
-			I = (1 << 2),		// Disable Interrupts
+			I = (1 << 2),		// Disable Interrupts | change is delayed by 1 instruction
 			D = (1 << 3),		// Decimal Mode (lacks functionality | unused)
 			B = (1 << 4),		// Break
 			U = (1 << 5),		// Unused
@@ -231,7 +231,6 @@ namespace NES::CPU {
 		u8 XXX(); // Illegal Opcodes
 
 		R6502() { }
-
 		~R6502() { delete _bus; }
 
 		// External Signals
@@ -244,6 +243,9 @@ namespace NES::CPU {
 				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
 				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)(); // TODO: Send OPCODE to the Address Mode
 				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
+
+				(this->*delay_change)();
+				(this->*delay_assign)(); // fbrereto -> https://stackoverflow.com/questions/2898316/using-a-member-function-pointer-within-a-class
 
 #if CPU_TEST
 				--_instructions_count;
@@ -266,6 +268,7 @@ namespace NES::CPU {
 			_stack_pointer = 0xFD;
 			_status_register = 0x00 | StateFlags::U | StateFlags::I; // Disable Interrupts at Init.
 
+			_cycles = 2;
 			_address_abs = 0xFFFC; // Reset vector, which points at code to initialize the NES chipset | $FFFC–$FFFD
 			u16 l_address = read(_address_abs + 0);
 			u16 h_address = read(_address_abs + 1);
@@ -280,12 +283,12 @@ namespace NES::CPU {
 			_bus->reset();
 
 #if CPU_TEST
-			_program_counter = 0x0000;
 			_cycles = 0;
+#else
+			_cycles = 8; // Since it takes time...
 #endif // CPU_TEST
 
 			clock();
-			_cycles = 8; // Since it takes time...
 		}
 
 		/// INTERRUPTS ///
@@ -294,56 +297,25 @@ namespace NES::CPU {
 		// The routine, called an interrupt service routine (ISR) or interrupt handler, processes the event and then returns to the main program.
 		
 		// Interupt Request
-		void irq() { // Can occur at any point of time | Can be disabled. | level-sensitive (reacts to a low signal level)
+		void irq() { // Can occur at any point of time | Can be disabled. | level-sensitive (reacts to a low signal level) | Triggered by external hardware
 			if (GetFlag(StateFlags::I) == 0) {
-				// Write Current Program Counter to the Stack
-				_data = (_program_counter >> 8) & 0x00FF;
-				//write_memory(0x0100 + _stack_pointer);
-				--_stack_pointer;
-				_data = _program_counter & 0x00FF;
-				//write_memory(0x0100 + _stack_pointer);
-				--_stack_pointer;
 
-				// Write Status Flag to the Stack
-				SetFlag(StateFlags::I, 1);
 				SetFlag(StateFlags::B, 0);
-				_data = _status_register;
-				//write_memory(0x0100 + _stack_pointer);
-				--_stack_pointer;
+				_address_abs = 0xFFFE;  // IRQ/BRK vector, which may point at a mapper's interrupt handler (or, less often, a handler for APU interrupts) | $FFFE–$FFFF
+				interrupt();
 
-				// Get Interrupt Handler's Address
-				_address_abs = 0xFFFA;  // IRQ/BRK vector, which may point at a mapper's interrupt handler (or, less often, a handler for APU interrupts) | $FFFE–$FFFF
-				u16 l_address = read(_address_abs + 0);
-				u16 h_address = read(_address_abs + 1);
-
-				_program_counter = (h_address << 8) | l_address;
-
-				_cycles = 8; // These take time...
+				_cycles = 7; // These take time...
 			}
 		}
 
 		// Non-Maskable Interrupt
 		void nmi() { // Can occur at any point of time | edge-sensitive (reacts to high-to-low transitions in the signal) 
-			// Write Current Program Counter to the Stack
-			//write(0x0100 + _stack_pointer, (_program_counter >> 8) & 0x00FF);
-			--_stack_pointer;
-			//write(0x0100 + _stack_pointer, _program_counter & 0x00FF);
-			--_stack_pointer;
 
-			// Write Status Flag to the Stack
-			SetFlag(StateFlags::I, 1);
 			SetFlag(StateFlags::B, 0);
-			//write(0x0100 + _stack_pointer, _status_register);
-			--_stack_pointer;
+			_address_abs = 0xFFFA;  //  NMI vector, which points at an NMI handler | $FFFA–$FFFB
+			interrupt();
 
-			// Get Interrupt Handler's Address
-			_address_abs = 0xFFFE;  //  NMI vector, which points at an NMI handler | $FFFA–$FFFB
-			u16 l_address = read(_address_abs + 0);
-			u16 h_address = read(_address_abs + 1);
-
-			_program_counter = (h_address << 8) | l_address;
-
-			_cycles = 7; // These take time...
+			_cycles = 8; // These take time...
 		}
 		/// END INTERRUPTS ///
 
@@ -384,6 +356,9 @@ namespace NES::CPU {
 		u16		_address_rel{ 0x00 }; // Relative Address
 
 		void	(R6502::*write)(u16) {}; // Write Function Pointer
+		void	(R6502::*delay_assign)() = &R6502::do_nothing_like_its_nobodys_business; // Delay Interrupt Disable Change Function Pointer
+		void	(R6502::*delay_change)() = &R6502::do_nothing_like_its_nobodys_business; // Delay Interrupt Disable Change Function Pointer
+		u8		_delay_change_value{ 0 };
 
 #if CPU_TEST
 		u16		_instructions_count{ 0 };
@@ -443,7 +418,7 @@ namespace NES::CPU {
 
 					{ "???", &R6502::XXX, &R6502::ZPX, 6 }, // Illegal -> SLO
 
-					{ "PHP", &R6502::PHP, &R6502::IMP, 2 },
+					{ "CLC", &R6502::CLC, &R6502::IMP, 2 },
 					{ "ORA", &R6502::ORA, &R6502::ABY, 4 }, // * -> Cycle count can increase
 
 					{ "???", &R6502::NOP, &R6502::IMP, 2 }, // Illegal -> NOP
@@ -856,9 +831,9 @@ namespace NES::CPU {
 		}; // Lookup Table for OP-Codes : 
 		// NOTE: * -> add 1 cycle if page boundary is crossed and/or add 1 cycle on branches if taken.
 
-		// Bitwise OR if value is true, otherwise Bitwise XOR
+		
 		void SetFlag(StateFlags status, bool value) {
-			_status_register = value ? _status_register | status : _status_register & ~status;
+			_status_register = value ? _status_register | status : _status_register & ~status; // Bitwise OR if value is true, otherwise Bitwise XOR
 		}
 
 		constexpr u8 GetFlag(StateFlags status) {
@@ -878,13 +853,16 @@ namespace NES::CPU {
 			}
 		}
 
+		void print_status_register();
+
 		// Writes to the Memory on the Address Bus
 		void write_memory(u16 address) {
 			_bus->write(address, _data);
 			clock();
 		}
 
-		void write_accumulator(u16 address) {
+		// Writes to the Accumulator on the Chip
+		void write_accumulator(u16) {
 			clock();
 		}
 
@@ -893,6 +871,43 @@ namespace NES::CPU {
 			u8 data{ _bus->read(address) };
 			clock();
 			return data;
+		}
+
+		// Handles interrupt calls and points to the Respective Handler
+		void interrupt() {
+
+			// Write Next Program Counter to the Stack
+			_data = (_program_counter >> 8) & 0x00FF;
+			write_memory(0x0100 + _stack_pointer);
+			--_stack_pointer;
+			_data = _program_counter & 0x00FF;
+			write_memory(0x0100 + _stack_pointer);
+			--_stack_pointer;
+
+			// Write Status Flag to the Stack
+			SetFlag(StateFlags::I, 1);
+			_data = _status_register;
+			write_memory(0x0100 + _stack_pointer);
+			--_stack_pointer;
+
+			// Get Interrupt Handler's Address
+			u16 l_address = read(_address_abs + 0);
+			u16 h_address = read(_address_abs + 1);
+
+			_program_counter = (h_address << 8) | l_address;
+		}
+
+		void do_nothing_like_its_nobodys_business() { }
+
+		void assign_delay_interrupt_disable_change() {
+			delay_change = &R6502::interrupt_disable_change;
+			delay_assign = &R6502::do_nothing_like_its_nobodys_business;
+		}
+		
+		void interrupt_disable_change() {
+			SetFlag(StateFlags::I, _delay_change_value);
+			delay_change = &R6502::do_nothing_like_its_nobodys_business;
+			print_status_register();
 		}
 	};
 }

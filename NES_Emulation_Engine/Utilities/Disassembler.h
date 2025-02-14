@@ -39,8 +39,8 @@ namespace NES::Utilities {
 			}
 		}
 
-		std::cout << "\nPress Any Key To Continue Execution! \n";
-		getchar();
+		//std::cout << "\nPress Any Key To Continue Execution! \n";
+		//getchar();
 	}
 
 	void disasm(std::array<u8, 2048>& ram) { // Disassembler

@@ -70,6 +70,23 @@ namespace NES::CPU {
 		case 3: // $6000 Cartridge
 #if !(CPU_TEST | RAM_TEST)
 			return _cartridge->cpu_read(address);
+#else
+			switch (address) {
+
+			// NMI Handler Address:
+			case 0xFFFA: return 0x00;
+			case 0xFFFB: return 0x00;
+
+			// Program Address:
+			case 0xFFFC: return 0x00;
+			case 0xFFFD: return 0x00;
+
+			// IRQ Handler Address:
+			case 0xFFFE: return 0x00;
+			case 0xFFFF: return 0x07;
+
+			default: break;
+			}
 #endif
 
 		default:
