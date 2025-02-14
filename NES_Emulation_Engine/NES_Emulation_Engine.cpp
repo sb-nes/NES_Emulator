@@ -20,12 +20,15 @@ int main()
 
     Cpu->SetBus(new CPU::Bus());
     Cpu->reset();
-    Cpu->set_instructions_count(65);
+
+#if CPU_TEST
+    Cpu->set_instructions_count(75);
 
     for (; Cpu->get_instructions_count() > 0;) {
         Cpu->clock();
     }
     Cpu->DisassembleRAM(0, 40);
+#endif // CPU_TEST
 
     delete Cpu;
 

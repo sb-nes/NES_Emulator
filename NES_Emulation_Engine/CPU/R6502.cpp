@@ -110,33 +110,91 @@ namespace NES::CPU {
 		return 0;
 	}
 
-	/// Branch Opcodes ///
+	/// Branch/IF Opcodes ///
 
 	// Branch if Carry Clear | BLT - Branch if Less Than
 	u8 R6502::BCC() {
+#if CPU_TEST
+		std::cout << "Branch if Carry Clear: " << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 2) << "\n";
+#endif
 		if (!GetFlag(StateFlags::C)) {
+			_address_abs = _program_counter;
+			_program_counter += _address_rel;
 
+#if CPU_TEST
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+#endif
+
+			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
+				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
+				return 2;
+			}
+			return 1; // Jump/Branch Taken
 		}
 
-		return 0;
+#if CPU_TEST
+		std::cout << "Branch Not Taken! " << "\n\n";
+#endif
+		++_program_counter;
+		return 0; // Jump/Branch Not Taken
 	}
 
 	// Branch if Carry Set
 	u8 R6502::BCS() {
+#if CPU_TEST
+		std::cout << "Branch if Carry Set: " << "\n";
+		std::cout << _data << " " << hexString(_data, 2) << "\n";
+#endif
 		if (GetFlag(StateFlags::C)) {
+			_address_abs = _program_counter;
+			_program_counter += _address_rel;
 
+#if CPU_TEST
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+#endif
+
+			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
+				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
+				return 2;
+			}
+			return 1; // Jump/Branch Taken
 		}
 
-		return 0;
+#if CPU_TEST
+		std::cout << "Branch Not Taken! " << "\n\n";
+#endif
+		++_program_counter;
+		return 0; // Jump/Branch Not Taken
 	}
 
 	// Branch if Equal
 	u8 R6502::BEQ() {
+#if CPU_TEST
+		std::cout << "Branch if Equal: " << "\n";
+		std::cout << _data << " " << hexString(_data, 2) << "\n";
+#endif
 		if (GetFlag(StateFlags::Z)) {
+			_address_abs = _program_counter;
+			_program_counter += _address_rel;
 
+#if CPU_TEST
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+#endif
+
+			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
+				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
+				return 2;
+			}
+			return 1; // Jump/Branch Taken
 		}
 
-		return 0;
+#if CPU_TEST
+		std::cout << "Branch Not Taken! " << "\n\n";
+#endif
+
+		++_program_counter;
+		return 0; // Jump/Branch Not Taken
 	}
 	/// END ///
 
@@ -158,33 +216,93 @@ namespace NES::CPU {
 		return 0;
 	}
 
-	/// Branch Opcodes ///
+	/// Branch/IF Opcodes ///
 
 	// Branch if Minus
 	u8 R6502::BMI() {
+#if CPU_TEST
+		std::cout << "Branch if Minus: " << "\n";
+		std::cout << _data << " " << hexString(_data, 2) << "\n";
+#endif
 		if (GetFlag(StateFlags::N)) {
+			_address_abs = _program_counter;
+			_program_counter += _address_rel;
 
+#if CPU_TEST
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+#endif
+
+			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
+				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
+				return 2;
+			}
+			return 1; // Jump/Branch Taken
 		}
 
-		return 0;
+#if CPU_TEST
+		std::cout << "Branch Not Taken! " << "\n\n";
+#endif
+
+		++_program_counter;
+		return 0; // Jump/Branch Not Taken
 	}
 
 	// Branch if Not Equal
 	u8 R6502::BNE() {
+#if CPU_TEST
+		std::cout << "Branch if Not Equal: " << "\n";
+		std::cout << _data << " " << hexString(_data, 2) << "\n";
+#endif
 		if (!GetFlag(StateFlags::Z)) {
+			_address_abs = _program_counter;
+			_program_counter += _address_rel;
 
+#if CPU_TEST
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+#endif
+
+			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
+				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
+				return 2;
+			}
+			return 1; // Jump/Branch Taken
 		}
 
-		return 0;
+#if CPU_TEST
+		std::cout << "Branch Not Taken! " << "\n\n";
+#endif
+
+		++_program_counter;
+		return 0; // Jump/Branch Not Taken
 	}
 
 	// Branch if Plus
 	u8 R6502::BPL() {
+#if CPU_TEST
+		std::cout << "Branch if Plus: " << "\n";
+		std::cout << _data << " " << hexString(_data, 2) << "\n";
+#endif
 		if (!GetFlag(StateFlags::N)) {
+			_address_abs = _program_counter;
+			_program_counter += _address_rel;
 
+#if CPU_TEST
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+#endif
+
+			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
+				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
+				return 2;
+			}
+			return 1; // Jump/Branch Taken
 		}
 
-		return 0;
+#if CPU_TEST
+		std::cout << "Branch Not Taken! " << "\n\n";
+#endif
+
+		++_program_counter;
+		return 0; // Jump/Branch Not Taken
 	}
 	/// END ///
 	
@@ -208,24 +326,64 @@ namespace NES::CPU {
 		return 0;
 	}
 
-	/// Branch Opcodes ///
+	/// Branch/IF Opcodes ///
 
 	// Branch if Overflow Clear
 	u8 R6502::BVC() {
+#if CPU_TEST
+		std::cout << "Branch if Overflow Clear: " << "\n";
+		std::cout << _data << " " << hexString(_data, 2) << "\n";
+#endif
 		if (!GetFlag(StateFlags::V)) {
+			_address_abs = _program_counter;
+			_program_counter += _address_rel;
 
+#if CPU_TEST
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+#endif
+
+			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
+				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
+				return 2;
+			}
+			return 1; // Jump/Branch Taken
 		}
 
-		return 0;
+#if CPU_TEST
+		std::cout << "Branch Not Taken! " << "\n\n";
+#endif
+
+		++_program_counter;
+		return 0; // Jump/Branch Not Taken
 	}
 
 	// Branch if Overflow Set
 	u8 R6502::BVS() {
+#if CPU_TEST
+		std::cout << "Branch if Overflow Set: " << "\n";
+		std::cout << _data << " " << hexString(_data, 2) << "\n";
+#endif
 		if (GetFlag(StateFlags::V)) {
+			_address_abs = _program_counter;
+			_program_counter += _address_rel;
 
+#if CPU_TEST
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+#endif
+
+			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
+				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
+				return 2;
+			}
+			return 1; // Jump/Branch Taken
 		}
 
-		return 0;
+#if CPU_TEST
+		std::cout << "Branch Not Taken! " << "\n\n";
+#endif
+
+		++_program_counter;
+		return 0; // Jump/Branch Not Taken
 	}
 	/// END ///
 
@@ -1031,6 +1189,8 @@ namespace NES::CPU {
 	u8 R6502::XXX() { return 0; }
 
 	void R6502::print_status_register() {
+#if CPU_TEST
 		std::cout << "Status Register: " << binString(_status_register, 8) << "\n\n";
+#endif
 	}
 }

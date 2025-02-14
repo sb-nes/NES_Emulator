@@ -79,7 +79,7 @@ namespace NES::CPU {
 
 		u8 REL() { // Relative | For Branching Instructions -> can't jump to anywhere in the address range; They can only jump thats in the vicinity of the branch instruction, no more than 127 memory locations
 			assert(_cycles > 0);
-			_address_rel = read_memory(_program_counter++);
+			_address_rel = read_memory(_program_counter);
 			// NOTE: if sign bit of the unsigned address is 1, then we set all high bits to 1. -> reason, to use binary arithmetic.
 			if (_address_rel & 0x80) _address_rel |= 0xFF00;
 			read = &R6502::read_memory;
@@ -105,7 +105,7 @@ namespace NES::CPU {
 			_address_abs = (h_address << 8) | l_address; // h_address shifted 8 bits to the left and OR'ed with l_address
 			_address_abs += _x_register; clock(); // Reading from X register cost 1 cycle
 
-			if (h_address != (_address_abs >> 2)) { // if the memory Page has changed, then 
+			if (h_address != (_address_abs >> 8)) { // if the memory Page has changed, then 
 				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 				return 1;
 			}
@@ -121,7 +121,7 @@ namespace NES::CPU {
 			_address_abs = (h_address << 8) | l_address; // h_address shifted 8 bits to the left and OR'ed with l_address
 			_address_abs += _y_register; clock(); // Reading from Y register cost 1 cycle
 
-			if (h_address != (_address_abs >> 2)) { // if the memory Page has changed, then 
+			if (h_address != (_address_abs >> 8)) { // if the memory Page has changed, then 
 				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 				return 1;
 			}
@@ -169,7 +169,7 @@ namespace NES::CPU {
 			_data = read_memory(_address_abs); // Reading costs 1 cycle
 
 			// TODO: fix this page wrap code
-			if (h_address_i != (_address_abs >> 2)) { // if the memory Page has changed, then 
+			if (h_address_i != (_address_abs >> 8)) { // if the memory Page has changed, then 
 				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 				return 1;
 			}
@@ -701,7 +701,7 @@ namespace NES::CPU {
 
 			{ // Bx 
 				{
-					{ "BCS", &R6502::LDY, &R6502::REL, 2 }, // * -> Cycle count can increase
+					{ "BCS", &R6502::BCS, &R6502::REL, 2 }, // * -> Cycle count can increase
 					{ "LDA", &R6502::LDA, &R6502::IZY, 5 }, // * -> Cycle count can increase
 
 					{}, // Illegal -> KIL
@@ -926,7 +926,9 @@ namespace NES::CPU {
 		void interrupt_disable_change() {
 			SetFlag(StateFlags::I, _delay_change_value);
 			delay_change = &R6502::do_nothing_like_its_nobodys_business;
+#if CPU_TEST
 			print_status_register();
+#endif // CPU_TEST
 		}
 	};
 }

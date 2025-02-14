@@ -178,6 +178,34 @@ namespace NES::CPU {
 			_ram->write(0x0466, 0x38); // SEC
 			_ram->write(0x0467, 0x6A); // ROR
 
+			_ram->write(0x0468, 0x90); // BCC
+			_ram->write(0x0469, 0x05); // memory to skip
+
+			_ram->write(0x046A, 0xA0); // LDY IMM
+			_ram->write(0x046B, 0x0B); // data
+
+			_ram->write(0x046C, 0xD0); // BNE
+			_ram->write(0x046D, 0x0A); // memory to skip
+
+			_ram->write(0x046E, 0x38); // SEC
+			_ram->write(0x046F, 0xB0); // BCS
+			_ram->write(0x0470, 0xFA); // memory to skip
+
+			_ram->write(0x0477, 0xA5); // LDA
+			_ram->write(0x0478, 0x01); // data
+
+			_ram->write(0x0479, 0xF0); // BEQ
+			_ram->write(0x047A, 0x02); // memory to skip
+
+			_ram->write(0x047B, 0x10); // BPL
+			_ram->write(0x047C, 0x00); // memory to skip
+
+			_ram->write(0x047D, 0x50); // BVC
+			_ram->write(0x047E, 0x00); // memory to skip
+
+			_ram->write(0x047F, 0x70); // BVS
+			_ram->write(0x0480, 0x03); // memory to skip
+
 #endif // CPU_TEST
 
 
