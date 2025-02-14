@@ -20,7 +20,7 @@ int main()
 
     Cpu->SetBus(new CPU::Bus());
     Cpu->reset();
-    Cpu->set_instructions_count(40);
+    Cpu->set_instructions_count(65);
 
     for (; Cpu->get_instructions_count() > 0;) {
         Cpu->clock();

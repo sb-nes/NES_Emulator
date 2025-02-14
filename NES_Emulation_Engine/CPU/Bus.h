@@ -36,9 +36,36 @@ namespace NES::CPU {
 			/// Interrupt Handler
 			_ram->write(0x0700, 0xA9); // LDA ZP
 			_ram->write(0x0701, 0x02); // data
-			_ram->write(0x0702, 0xA9); // LDA ZP
-			_ram->write(0x0703, 0x00); // data
-			_ram->write(0x0704, 0x40); // RTI
+			_ram->write(0x0702, 0x38); // data -> for normal subtraction
+			_ram->write(0x0703, 0xE9); // SBC
+			_ram->write(0x0704, 0x04); // data
+			_ram->write(0x0705, 0xA9); // LDA ZP
+			_ram->write(0x0706, 0x8D); // data
+			_ram->write(0x0707, 0x40); // RTI
+			/// END
+
+			/// Subroutine
+			_ram->write(0x0730, 0xA9); // LDA
+			_ram->write(0x0731, 0x40); // data
+			_ram->write(0x0732, 0xE6); // INC ZP
+			_ram->write(0x0733, 0x10); // data
+			_ram->write(0x0734, 0xA6); // LDX ZP
+			_ram->write(0x0735, 0x10); // data
+			_ram->write(0x0736, 0xD6); // DEC ZPX
+			_ram->write(0x0737, 0x06); // data
+			_ram->write(0x0738, 0xA9); // LDA IMM
+			_ram->write(0x0739, 0x18); // data
+			_ram->write(0x073A, 0xC9); // CMP
+			_ram->write(0x073B, 0x17); // data
+			_ram->write(0x073C, 0xA2); // LDX
+			_ram->write(0x073D, 0x15); // data
+			_ram->write(0x073E, 0xE0); // CPX
+			_ram->write(0x073F, 0x18); // data
+			_ram->write(0x0740, 0xA0); // LDY
+			_ram->write(0x0741, 0xC1); // data
+			_ram->write(0x0742, 0xC0); // CPY
+			_ram->write(0x0743, 0xC0); // data
+			_ram->write(0x0744, 0x60); // RTI
 			/// END
 
 			_ram->write(0x0010, 0x02); // data
@@ -125,8 +152,31 @@ namespace NES::CPU {
 			_ram->write(0x0450, 0x28); // PLP
 			_ram->write(0x0451, 0x68); // PLA
 
-			_ram->write(0x0454, 0xA9); // LDA
+			_ram->write(0x0454, 0x29); // AND
 			_ram->write(0x0455, 0x68); // data
+			_ram->write(0x0456, 0x49); // EOR
+			_ram->write(0x0457, 0x68); // data
+			_ram->write(0x0458, 0x09); // ORA
+			_ram->write(0x0459, 0x0F); // data
+
+			_ram->write(0x045A, 0x20); // JSR
+			_ram->write(0x045B, 0x30); // low
+			_ram->write(0x045C, 0x07); // high
+
+			_ram->write(0x045D, 0x09); // ORA
+			_ram->write(0x045E, 0x0A); // data
+
+			_ram->write(0x045F, 0x0A); // ASL
+			_ram->write(0x0460, 0x4A); // LSR
+
+			_ram->write(0x0461, 0x2A); // ROL
+			_ram->write(0x0462, 0x38); // SEC
+			_ram->write(0x0463, 0x2A); // ROL
+
+			_ram->write(0x0464, 0x18); // CLC
+			_ram->write(0x0465, 0x6A); // ROR
+			_ram->write(0x0466, 0x38); // SEC
+			_ram->write(0x0467, 0x6A); // ROR
 
 #endif // CPU_TEST
 

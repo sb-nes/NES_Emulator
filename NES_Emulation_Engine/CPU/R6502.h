@@ -40,6 +40,7 @@ namespace NES::CPU {
 
 		u8 IMP() { // Implicit/Implied | Instructions like RTS or CLC have no address operand, the destination of results are implied. | Accumulator Address Mode
 			assert (_cycles > 0);
+			read = &R6502::read_accumulator;
 			write = &R6502::write_accumulator;
 			return 0;
 		}
@@ -52,32 +53,36 @@ namespace NES::CPU {
 
 		u8 ZP0() { // Zero-Page | Fetches the value from an 8-bit address on the zero page.
 			assert(_cycles > 0);
-			_address_abs = (read(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
+			_address_abs = (read_memory(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;
 		}
 
 		u8 ZPX() { // Zero-Page Indexed X-Offset | Uses value stored in X-register to index in Zero Page
 			assert(_cycles > 0);
-			_address_abs = (read(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
+			_address_abs = (read_memory(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
 			_address_abs += _x_register; clock(); // Reading from X register cost 1 cycle
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;
 		}
 
 		u8 ZPY() { // Zero-Page Indexed Y-Offset | Uses value stored in Y-register to index in Zero Page
 			assert(_cycles > 0);
-			_address_abs = (read(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
+			_address_abs = (read_memory(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
 			_address_abs += _y_register; clock(); // Reading from Y register cost 1 cycle
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;
 		}
 
 		u8 REL() { // Relative | For Branching Instructions -> can't jump to anywhere in the address range; They can only jump thats in the vicinity of the branch instruction, no more than 127 memory locations
 			assert(_cycles > 0);
-			_address_rel = read(_program_counter++);
+			_address_rel = read_memory(_program_counter++);
 			// NOTE: if sign bit of the unsigned address is 1, then we set all high bits to 1. -> reason, to use binary arithmetic.
 			if (_address_rel & 0x80) _address_rel |= 0xFF00;
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 
 			return 0;
@@ -85,17 +90,18 @@ namespace NES::CPU {
 
 		u8 ABS() { // Absolute | Fetches a 2-byte address from the program counter
 			assert(_cycles > 0);
-			u16 l_address = read(_program_counter++);// Reading costs 1 cycle
-			u16 h_address = read(_program_counter++);// Reading costs 1 cycle
+			u16 l_address = read_memory(_program_counter++);// Reading costs 1 cycle
+			u16 h_address = read_memory(_program_counter++);// Reading costs 1 cycle
 			_address_abs = (h_address << 8) | l_address; // h_address shifted 8 bits to the left and OR'ed with l_address
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;
 		}
 
 		u8 ABX() { // Absolute Indexed X-Offset | Uses value stored in X-register to offset the absolute address
 			assert(_cycles > 0);
-			u16 l_address = read(_program_counter++); // Reading costs 1 cycle
-			u16 h_address = read(_program_counter++); // Reading costs 1 cycle
+			u16 l_address = read_memory(_program_counter++); // Reading costs 1 cycle
+			u16 h_address = read_memory(_program_counter++); // Reading costs 1 cycle
 			_address_abs = (h_address << 8) | l_address; // h_address shifted 8 bits to the left and OR'ed with l_address
 			_address_abs += _x_register; clock(); // Reading from X register cost 1 cycle
 
@@ -103,14 +109,15 @@ namespace NES::CPU {
 				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 				return 1;
 			}
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;
 		}
 
 		u8 ABY() { // Absolute Indexed Y-Offset | Uses value stored in Y-register to offset the absolute address
 			assert(_cycles > 0);
-			u16 l_address = read(_program_counter++); // Reading costs 1 cycle
-			u16 h_address = read(_program_counter++); // Reading costs 1 cycle
+			u16 l_address = read_memory(_program_counter++); // Reading costs 1 cycle
+			u16 h_address = read_memory(_program_counter++); // Reading costs 1 cycle
 			_address_abs = (h_address << 8) | l_address; // h_address shifted 8 bits to the left and OR'ed with l_address
 			_address_abs += _y_register; clock(); // Reading from Y register cost 1 cycle
 
@@ -118,31 +125,34 @@ namespace NES::CPU {
 				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 				return 1;
 			}
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;
 		}
 
 		u8 IND() { // Indirect | R6502's way of implementing pointers in the NES
 			assert(_cycles > 0);
-			u16 l_address_i = read(_program_counter++); // Reading costs 1 cycle
-			u16 h_address_i = read(_program_counter++); // Reading costs 1 cycle
+			u16 l_address_i = read_memory(_program_counter++); // Reading costs 1 cycle
+			u16 h_address_i = read_memory(_program_counter++); // Reading costs 1 cycle
 			u16 address_i = (h_address_i << 8) | l_address_i; // h_address shifted 8 bits to the left and OR'ed with l_address
 
 			if (l_address_i == 0x00FF) { // Page Boundary Glitch -> Indirect JMP ($ADDR) Glitch -> Reads the wrong address when crossing a page due to 6502's memory access logic
-				_address_abs = (read(address_i & 0xFF00) << 8) | read(address_i);
+				_address_abs = (read_memory(address_i & 0xFF00) << 8) | read_memory(address_i);
 			} else {
-				_address_abs = (read(address_i + 1) << 8) | read(address_i); // Reading costs 2 cycle
+				_address_abs = (read_memory(address_i + 1) << 8) | read_memory(address_i); // Reading costs 2 cycle
 			}
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;
 		}
 
 		u8 IZX() { // Indirect Indexed X-Offset | Question: WHY????
 			assert(_cycles > 0);
-			u16 t_i = read(_program_counter++); // Reading costs 1 cycle
-			u16 l_address_i = read((u16)(t_i + (u16)_x_register) * 0x00FF); // Reading costs 1 cycle
-			u16 h_address_i = read((u16)(t_i + (u16)_x_register + 1) * 0x00FF); // Reading costs 1 cycle
+			u16 t_i = read_memory(_program_counter++); // Reading costs 1 cycle
+			u16 l_address_i = read_memory((u16)(t_i + (u16)_x_register) * 0x00FF); // Reading costs 1 cycle
+			u16 h_address_i = read_memory((u16)(t_i + (u16)_x_register + 1) * 0x00FF); // Reading costs 1 cycle
 			_address_abs = (h_address_i << 8) | l_address_i;
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 
 			return 0;
@@ -150,19 +160,20 @@ namespace NES::CPU {
 
 		u8 IZY() { // Indirect	Indexed Y-Offset | Uses value stored in Y-register to offset the indirect address/ Pointer
 			assert(_cycles > 0);
-			u16 t_i = read(_program_counter++); // Reading costs 1 cycle
+			u16 t_i = read_memory(_program_counter++); // Reading costs 1 cycle
 
-			u16 l_address_i = read(t_i & 0x00FF); // Reading costs 1 cycle
-			u16 h_address_i = read((t_i + 1) & 0x00FF); // Reading costs 1 cycle
+			u16 l_address_i = read_memory(t_i & 0x00FF); // Reading costs 1 cycle
+			u16 h_address_i = read_memory((t_i + 1) & 0x00FF); // Reading costs 1 cycle
 			u16 _address_abs = (h_address_i << 8) | l_address_i; // h_address shifted 8 bits to the left and OR'ed with l_address
 			_address_abs += _y_register; clock(); // Reading from Y register cost 1 cycle
-			_data = read(_address_abs); // Reading costs 1 cycle
+			_data = read_memory(_address_abs); // Reading costs 1 cycle
 
 			// TODO: fix this page wrap code
 			if (h_address_i != (_address_abs >> 2)) { // if the memory Page has changed, then 
 				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 				return 1;
 			}
+			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 
 			return 0;
@@ -238,10 +249,10 @@ namespace NES::CPU {
 			if (_cycles == 0) {
 				assert(_cycles == 0);
 				++_cycles; // Since, whenever i read, i use one cpu cycle in the read function
-				_opcode = read(_program_counter++);
+				_opcode = read_memory(_program_counter++);
 
 				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
-				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)(); // TODO: Send OPCODE to the Address Mode
+				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
 				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
 
 				(this->*delay_change)();
@@ -270,8 +281,8 @@ namespace NES::CPU {
 
 			_cycles = 2;
 			_address_abs = 0xFFFC; // Reset vector, which points at code to initialize the NES chipset | $FFFC–$FFFD
-			u16 l_address = read(_address_abs + 0);
-			u16 h_address = read(_address_abs + 1);
+			u16 l_address = read_memory(_address_abs + 0);
+			u16 h_address = read_memory(_address_abs + 1);
 
 			_program_counter = (h_address << 8) | l_address;
 
@@ -356,6 +367,7 @@ namespace NES::CPU {
 		u16		_address_rel{ 0x00 }; // Relative Address
 
 		void	(R6502::*write)(u16) {}; // Write Function Pointer
+		u8		(R6502::* read)(u16, bool) {}; // Write Function Pointer
 		void	(R6502::*delay_assign)() = &R6502::do_nothing_like_its_nobodys_business; // Delay Interrupt Disable Change Function Pointer
 		void	(R6502::*delay_change)() = &R6502::do_nothing_like_its_nobodys_business; // Delay Interrupt Disable Change Function Pointer
 		u8		_delay_change_value{ 0 };
@@ -392,7 +404,7 @@ namespace NES::CPU {
 
 					{ "PHP", &R6502::PHP, &R6502::IMP, 3 },
 					{ "ORA", &R6502::ORA, &R6502::IMM, 2 },
-					{ "ASL", &R6502::ASL, &R6502::IMP, 3 },
+					{ "ASL", &R6502::ASL, &R6502::IMP, 2 },
 
 					{ "???", &R6502::XXX, &R6502::IMM, 2 }, // Illegal -> ANC
 					{ "???", &R6502::NOP, &R6502::ABS, 4 }, // Illegal -> NOP
@@ -863,11 +875,18 @@ namespace NES::CPU {
 
 		// Writes to the Accumulator on the Chip
 		void write_accumulator(u16) {
-			clock();
+			// no clock
+			_accumulator = _data;
 		}
 
 		// Reads from the Memory on the Address Bus
-		u8 read(u16 address, bool bReadOnly = false) {
+		u8 read_accumulator(u16 address, bool bReadOnly = false) {
+			u8 data{ _accumulator };
+			return data;
+		}
+
+		// Reads from the Memory on the Address Bus
+		u8 read_memory(u16 address, bool bReadOnly = false) {
 			u8 data{ _bus->read(address) };
 			clock();
 			return data;
@@ -891,8 +910,8 @@ namespace NES::CPU {
 			SetFlag(StateFlags::I, 1);
 
 			// Get Interrupt Handler's Address
-			u16 l_address = read(_address_abs + 0);
-			u16 h_address = read(_address_abs + 1);
+			u16 l_address = read_memory(_address_abs + 0);
+			u16 h_address = read_memory(_address_abs + 1);
 
 			_program_counter = (h_address << 8) | l_address;
 		}
