@@ -46,7 +46,7 @@ namespace NES::CPU {
 
 		u8 IMM() { // Immediate | Uses the 8-bit operand itself as the value for the operation, rather than fetching a value from another memory address. [operand itself is in a Memory Location]
 			assert(_cycles > 0);
-			_address_abs = 0x00FF & _program_counter++; // Reading costs 1 cycle
+			_address_abs = _program_counter++; // Reading costs 1 cycle
 			return 0;
 		}
 
@@ -885,10 +885,10 @@ namespace NES::CPU {
 			--_stack_pointer;
 
 			// Write Status Flag to the Stack
-			SetFlag(StateFlags::I, 1);
 			_data = _status_register;
 			write_memory(0x0100 + _stack_pointer);
 			--_stack_pointer;
+			SetFlag(StateFlags::I, 1);
 
 			// Get Interrupt Handler's Address
 			u16 l_address = read(_address_abs + 0);

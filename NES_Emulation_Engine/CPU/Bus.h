@@ -34,8 +34,11 @@ namespace NES::CPU {
 
 #if CPU_TEST
 			/// Interrupt Handler
-			_ram->write(0x0700, 0x00); // data
-			_ram->write(0x0001, 0x02); // data
+			_ram->write(0x0700, 0xA9); // LDA ZP
+			_ram->write(0x0701, 0x02); // data
+			_ram->write(0x0702, 0xA9); // LDA ZP
+			_ram->write(0x0703, 0x00); // data
+			_ram->write(0x0704, 0x40); // RTI
 			/// END
 
 			_ram->write(0x0010, 0x02); // data
@@ -121,6 +124,9 @@ namespace NES::CPU {
 			_ram->write(0x044F, 0x08); // PHP
 			_ram->write(0x0450, 0x28); // PLP
 			_ram->write(0x0451, 0x68); // PLA
+
+			_ram->write(0x0454, 0xA9); // LDA
+			_ram->write(0x0455, 0x68); // data
 
 #endif // CPU_TEST
 

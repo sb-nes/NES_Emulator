@@ -502,7 +502,8 @@ namespace NES::CPU {
 		_data = read(0x0100 + _stack_pointer) & 0xCF;
 		_data |= StateFlags::U;
 
-		_delay_change_value = (_data & 0x04) >> 2;
+		_delay_change_value = (_data & StateFlags::I) >> 2;
+		_data &= ~StateFlags::I;
 		delay_assign = &R6502::assign_delay_interrupt_disable_change; // The effect of changing Interrupt Disable [I] flag is delayed 1 instruction, because the flag is changed after IRQ is polled, delaying the effect until IRQ is polled in the next instruction like with CLI and SEI.
 		
 		_status_register |= _data; clock();
@@ -530,16 +531,26 @@ namespace NES::CPU {
 
 	// Return from Interrupt
 	u8 R6502::RTI() { // pull NVxxDIZC flags from stack | pull PC from stack
-		// Read Status Register from Stack | Leave the Interrupt Disable Flag as 1
+		// Read Status Register from Stack | Changing the Interrupt Disable Flag is immediate
 		++_stack_pointer;
 		_status_register = read(0x0100 + _stack_pointer);
 		_status_register &= ~StateFlags::B;
-		_status_register &= ~StateFlags::U;
+		_status_register |= StateFlags::U;
 
 		++_stack_pointer;
 		_program_counter = (u16)read(0x0100 + _stack_pointer); // Address - Low
 		++_stack_pointer;
 		_program_counter |= (u16)read(0x0100 + _stack_pointer) << 8; // Address - High
+
+#if CPU_TEST
+		std::cout << "Return From Interrupt [RTI]: " << "\n";
+		std::cout << "Stack Pointer Before RTI: " << hexString(_stack_pointer + 3, 2) << "\n";
+		std::cout << "Program Counter: " << hexString(_program_counter, 4) << "\n";
+		std::cout << "Stack Pointer After RTI: " << hexString(_stack_pointer, 2) << "\n";
+		std::cout << "Status Register: " << binString(_status_register, 8) << "\n\n";
+
+		DisassembleRAM(0x01B0, 0x0200);
+#endif // CPU_TEST
 
 		return 0;
 	}
