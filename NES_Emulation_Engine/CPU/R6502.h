@@ -79,7 +79,7 @@ namespace NES::CPU {
 
 		u8 REL() { // Relative | For Branching Instructions -> can't jump to anywhere in the address range; They can only jump thats in the vicinity of the branch instruction, no more than 127 memory locations
 			assert(_cycles > 0);
-			_address_rel = read_memory(_program_counter);
+			_address_rel = read_memory(_program_counter++);
 			// NOTE: if sign bit of the unsigned address is 1, then we set all high bits to 1. -> reason, to use binary arithmetic.
 			if (_address_rel & 0x80) _address_rel |= 0xFF00;
 			read = &R6502::read_memory;
@@ -384,7 +384,7 @@ namespace NES::CPU {
 			u8			  cycles = 2;
 		};
 
-		// TODO: to check table with reference
+		// Lookup Table Map for R-MOS6502 Instructions
 		const std::array<std::array<R6502::Instruction, 16>, 16> _lookup{ // Row-Major 16x16
 			{ // Array Bracket
 
@@ -398,7 +398,7 @@ namespace NES::CPU {
 					{ "???", &R6502::NOP, &R6502::ZP0, 3 }, // Illegal -> NOP
 
 					{ "ORA", &R6502::ORA, &R6502::ZP0, 3 },
-					{ "ASL", &R6502::ORA, &R6502::ZP0, 5 },
+					{ "ASL", &R6502::ASL, &R6502::ZP0, 5 },
 
 					{ "???", &R6502::XXX, &R6502::ZP0, 5 }, // Illegal -> SLO
 
@@ -426,7 +426,7 @@ namespace NES::CPU {
 					{ "???", &R6502::NOP, &R6502::ZPX, 4 }, // Illegal -> NOP
 
 					{ "ORA", &R6502::ORA, &R6502::ZPX, 4 },
-					{ "ASL", &R6502::ORA, &R6502::ZPX, 6 },
+					{ "ASL", &R6502::ASL, &R6502::ZPX, 6 },
 
 					{ "???", &R6502::XXX, &R6502::ZPX, 6 }, // Illegal -> SLO
 
@@ -481,8 +481,8 @@ namespace NES::CPU {
 					{ "???", &R6502::XXX, &R6502::IZY, 8 }, // Illegal -> RLA
 					{ "???", &R6502::NOP, &R6502::ZPX, 4 }, // Illegal -> NOP
 
-					{ "ORA", &R6502::ORA, &R6502::ZPX, 4 },
-					{ "ASL", &R6502::ORA, &R6502::ZPX, 6 },
+					{ "AND", &R6502::AND, &R6502::ZPX, 4 },
+					{ "ROL", &R6502::ROL, &R6502::ZPX, 6 },
 
 					{ "???", &R6502::XXX, &R6502::ZPX, 6 }, // Illegal -> RLA
 
@@ -593,8 +593,8 @@ namespace NES::CPU {
 					{ "???", &R6502::XXX, &R6502::IZY, 8 }, // Illegal -> RRA
 					{ "???", &R6502::NOP, &R6502::ZPX, 4 }, // Illegal -> NOP
 
-					{ "ADC", &R6502::EOR, &R6502::ZPX, 4 },
-					{ "ROR", &R6502::LSR, &R6502::ZPX, 6 },
+					{ "ADC", &R6502::ADC, &R6502::ZPX, 4 },
+					{ "ROR", &R6502::ROR, &R6502::ZPX, 6 },
 
 					{ "???", &R6502::XXX, &R6502::ZPX, 6 }, // Illegal -> RRA
 
@@ -605,8 +605,8 @@ namespace NES::CPU {
 					{ "???", &R6502::XXX, &R6502::ABY, 7 }, // Illegal -> RRA
 					{ "???", &R6502::NOP, &R6502::ABX, 4 }, // Illegal -> NOP | * -> Cycle count can increase
 
-					{ "ADC", &R6502::EOR, &R6502::ABX, 4 }, // * -> Cycle count can increase
-					{ "ROR", &R6502::LSR, &R6502::ABX, 7 },
+					{ "ADC", &R6502::ADC, &R6502::ABX, 4 }, // * -> Cycle count can increase
+					{ "ROR", &R6502::ROR, &R6502::ABX, 7 },
 
 					{ "???", &R6502::XXX, &R6502::ABX, 7 }, // Illegal -> RRA
 				}
@@ -616,7 +616,7 @@ namespace NES::CPU {
 				{
 					{ "???", &R6502::NOP, &R6502::IMM, 2 }, // Illegal -> NOP
 
-					{ "STA", &R6502::ADC, &R6502::IZX, 6 },
+					{ "STA", &R6502::STA, &R6502::IZX, 6 },
 
 					{ "???", &R6502::NOP, &R6502::IMM, 2 }, // Illegal -> NOP
 					{ "???", &R6502::NOP, &R6502::IZX, 6 }, // Illegal -> SAX
@@ -723,7 +723,7 @@ namespace NES::CPU {
 					{ "LDA", &R6502::LDA, &R6502::ABX, 4 },	// * -> Cycle count can increase
 					{ "LDX", &R6502::LDX, &R6502::ABY, 4 },	// * -> Cycle count can increase
 
-					{ "???", &R6502::XXX, &R6502::ABX, 4 }, // Illegal -> LAX | * -> Cycle count can increase
+					{ "???", &R6502::XXX, &R6502::ABY, 4 }, // Illegal -> LAX | * -> Cycle count can increase
 				}
 			},
 
@@ -767,7 +767,7 @@ namespace NES::CPU {
 					{ "CMP", &R6502::CMP, &R6502::ZPX, 4 },
 					{ "DEC", &R6502::DEC, &R6502::ZPX, 6 },
 
-					{ "???", &R6502::XXX, &R6502::ZPX, 6 }, // Illegal -> SCP
+					{ "???", &R6502::XXX, &R6502::ZPX, 6 }, // Illegal -> DCP
 
 					{ "CLD", &R6502::CLD, &R6502::IMP, 2 },
 					{ "CMP", &R6502::CMP, &R6502::ABY, 4 }, // * -> Cycle count can increase
@@ -916,6 +916,7 @@ namespace NES::CPU {
 			_program_counter = (h_address << 8) | l_address;
 		}
 
+		// Handles delayed change for Interrupt Disable Flag
 		void do_nothing_like_its_nobodys_business() { }
 
 		void assign_delay_interrupt_disable_change() {

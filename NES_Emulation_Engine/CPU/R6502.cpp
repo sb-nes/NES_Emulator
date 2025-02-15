@@ -118,6 +118,7 @@ namespace NES::CPU {
 		std::cout << "Branch if Carry Clear: " << "\n";
 		std::cout << hexString(GetFlag(StateFlags::C), 1) << "\n";
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
+		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
 		if (!GetFlag(StateFlags::C)) {
 			_address_abs = _program_counter;
@@ -137,7 +138,6 @@ namespace NES::CPU {
 #if CPU_TEST
 		std::cout << "Branch Not Taken! " << "\n\n";
 #endif
-		++_program_counter;
 		return 0; // Jump/Branch Not Taken
 	}
 
@@ -147,6 +147,7 @@ namespace NES::CPU {
 		std::cout << "Branch if Carry Set: " << "\n";
 		std::cout << hexString(GetFlag(StateFlags::C), 1) << "\n";
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
+		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
 		if (GetFlag(StateFlags::C)) {
 			_address_abs = _program_counter;
@@ -166,7 +167,6 @@ namespace NES::CPU {
 #if CPU_TEST
 		std::cout << "Branch Not Taken! " << "\n\n";
 #endif
-		++_program_counter;
 		return 0; // Jump/Branch Not Taken
 	}
 
@@ -176,6 +176,7 @@ namespace NES::CPU {
 		std::cout << "Branch if Equal: " << "\n";
 		std::cout << hexString(GetFlag(StateFlags::Z), 1) << "\n";
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
+		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
 		if (GetFlag(StateFlags::Z)) {
 			_address_abs = _program_counter;
@@ -196,7 +197,6 @@ namespace NES::CPU {
 		std::cout << "Branch Not Taken! " << "\n\n";
 #endif
 
-		++_program_counter;
 		return 0; // Jump/Branch Not Taken
 	}
 	/// END ///
@@ -227,6 +227,7 @@ namespace NES::CPU {
 		std::cout << "Branch if Minus: " << "\n";
 		std::cout << hexString(GetFlag(StateFlags::N), 1) << "\n";
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
+		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
 		if (GetFlag(StateFlags::N)) {
 			_address_abs = _program_counter;
@@ -247,7 +248,6 @@ namespace NES::CPU {
 		std::cout << "Branch Not Taken! " << "\n\n";
 #endif
 
-		++_program_counter;
 		return 0; // Jump/Branch Not Taken
 	}
 
@@ -257,6 +257,7 @@ namespace NES::CPU {
 		std::cout << "Branch if Not Equal: " << "\n";
 		std::cout << hexString(GetFlag(StateFlags::Z), 1) << "\n";
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
+		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
 		if (!GetFlag(StateFlags::Z)) {
 			_address_abs = _program_counter;
@@ -277,7 +278,6 @@ namespace NES::CPU {
 		std::cout << "Branch Not Taken! " << "\n\n";
 #endif
 
-		++_program_counter;
 		return 0; // Jump/Branch Not Taken
 	}
 
@@ -287,6 +287,7 @@ namespace NES::CPU {
 		std::cout << "Branch if Plus: " << "\n";
 		std::cout << hexString(GetFlag(StateFlags::N), 1) << "\n";
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
+		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
 		if (!GetFlag(StateFlags::N)) {
 			_address_abs = _program_counter;
@@ -307,7 +308,6 @@ namespace NES::CPU {
 		std::cout << "Branch Not Taken! " << "\n\n";
 #endif
 
-		++_program_counter;
 		return 0; // Jump/Branch Not Taken
 	}
 	/// END ///
@@ -340,6 +340,7 @@ namespace NES::CPU {
 		std::cout << "Branch if Overflow Clear: " << "\n";
 		std::cout << hexString(GetFlag(StateFlags::V), 1) << "\n";
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
+		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
 		if (!GetFlag(StateFlags::V)) {
 			_address_abs = _program_counter;
@@ -360,7 +361,6 @@ namespace NES::CPU {
 		std::cout << "Branch Not Taken! " << "\n\n";
 #endif
 
-		++_program_counter;
 		return 0; // Jump/Branch Not Taken
 	}
 
@@ -370,6 +370,7 @@ namespace NES::CPU {
 		std::cout << "Branch if Overflow Set: " << "\n";
 		std::cout << hexString(GetFlag(StateFlags::C), 1) << "\n";
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
+		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
 		if (GetFlag(StateFlags::V)) {
 			_address_abs = _program_counter;
@@ -390,7 +391,6 @@ namespace NES::CPU {
 		std::cout << "Branch Not Taken! " << "\n\n";
 #endif
 
-		++_program_counter;
 		return 0; // Jump/Branch Not Taken
 	}
 	/// END ///

@@ -44,7 +44,7 @@ namespace NES::Utilities {
 	}
 
 	void disasm(std::array<u8, 2048>& ram) { // Disassembler
-		disasm(ram, 0, ram.size());
+		disasm(ram, 0, (u32)ram.size());
 	}
 
 }

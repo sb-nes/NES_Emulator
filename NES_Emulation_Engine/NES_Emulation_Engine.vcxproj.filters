@@ -23,5 +23,6 @@
     <ClInclude Include="Cartridge\iNES1.0\M_000_NROM.h" />
     <ClInclude Include="Cartridge\MapperTypes.h" />
     <ClInclude Include="Common\Test.h" />
+    <ClInclude Include="Common\CpuTest.h" />
   </ItemGroup>
 </Project>
