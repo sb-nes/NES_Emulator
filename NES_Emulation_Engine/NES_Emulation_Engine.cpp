@@ -22,7 +22,7 @@ int main()
     Cpu->reset();
 
 #if CPU_TEST
-    Cpu->set_instructions_count(75);
+    Cpu->set_instructions_count(88);
 
     for (; Cpu->get_instructions_count() > 0;) {
         Cpu->clock();

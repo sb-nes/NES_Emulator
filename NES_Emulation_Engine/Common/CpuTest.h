@@ -305,7 +305,17 @@ _ram->write(0x0467, 0x6A);
 // BVS
 // memory to skip
 // BCC
-// memory to skip
+//	
+// LOOP:						   \
+// DEY <- start <-------------------\
+// CPY								|\
+// data 0x07						| \
+// BNE								| /
+// memory to skip -> goto start ____|/
+// CLC								/
+// CLD							   /
+// CLI
+// CLV
 #define TEST_PROGRAM_BRANCH				\
 _ram->write(0x0468, 0x90); 				\
 _ram->write(0x0469, 0x04); 				\
@@ -335,8 +345,18 @@ _ram->write(0x047E, 0x01); 				\
 _ram->write(0x047F, 0x70); 				\
 _ram->write(0x0480, 0x03); 				\
 										\
-_ram->write(0x0484, 0x90); 				\
-_ram->write(0x0485, 0x05); 
+_ram->write(0x0484, 0x88); 				\
+										\
+_ram->write(0x0485, 0xC0); 				\
+_ram->write(0x0486, 0x07); 				\
+										\
+_ram->write(0x0487, 0xD0); 				\
+_ram->write(0x0488, 0xFB);				\
+										\
+_ram->write(0x0489, 0x18);				\
+_ram->write(0x048A, 0xD8);				\
+_ram->write(0x048B, 0x58);				\
+_ram->write(0x048C, 0xB8);				
 
 #else
 #define CPU_TEST_CODE 

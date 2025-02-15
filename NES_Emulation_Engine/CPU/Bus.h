@@ -38,9 +38,7 @@ namespace NES::CPU {
 			TEST_PROGRAM_A
 			TEST_PROGRAM_B
 			TEST_PROGRAM_BRANCH
-
 #endif // CPU_TEST
-
 
 		}
 

@@ -34,8 +34,8 @@ namespace NES::CPU {
 		// ABX -> $0000, X
 		// ABY -> $0000, Y
 		// IND -> ($0000)
-		// IZX -> ($00, X)
-		// IZY -> ($00), Y
+		// IZX -> ($00, X)		-> Not Tested Yet
+		// IZY -> ($00), Y		-> Not Tested Yet
 		// REL -> $0000 [Relative to Program-Counter]
 
 		u8 IMP() { // Implicit/Implied | Instructions like RTS or CLC have no address operand, the destination of results are implied. | Accumulator Address Mode
@@ -184,60 +184,60 @@ namespace NES::CPU {
 		// OPCODES/Instructions: https://www.nesdev.org/wiki/Instruction_reference | https://www.oxyron.de/html/opcodes02.html
 		u8 ADC(); // Add With Carry
 		u8 AND(); // AND operation
-		u8 ASL();
-		u8 BCC();
-		u8 BCS();
-		u8 BEQ();
-		u8 BIT();
-		u8 BMI();
-		u8 BNE();
-		u8 BPL();
+		u8 ASL(); // Arithmetic Shift Left
+		u8 BCC(); // Branch if Carry Clear
+		u8 BCS(); // Branch if Carry Set
+		u8 BEQ(); // Branch if Equal
+		u8 BIT(); // Bit Test
+		u8 BMI(); // Branch if Minus
+		u8 BNE(); // Branch if Not Equal
+		u8 BPL(); // Branch if Plus
 		u8 BRK(); // Break
-		u8 BVC();
-		u8 BVS();
+		u8 BVC(); // Branch if Overflow Clear
+		u8 BVS(); // Branch if Overflow Set
 		u8 CLC(); // Clear Carry Bit of Status/FLAG
-		u8 CLD();
-		u8 CLI();
-		u8 CLV();
-		u8 CMP();
-		u8 CPX();
-		u8 CPY();
-		u8 DEC();
+		u8 CLD(); // Clear Decimal Bit of Status/FLAG
+		u8 CLI(); // Clear Disable Interrupt Bit of Status/FLAG
+		u8 CLV(); // Clear Overflow Bit of Status/FLAG
+		u8 CMP(); // Compare Accumulator
+		u8 CPX(); // Compare X Register
+		u8 CPY(); // Compare Y Register
+		u8 DEC(); // Decrement Value in Memory
 		u8 DEX(); // Decrement X Register
 		u8 DEY(); // Decrement Y Register
-		u8 EOR();
-		u8 INC();
-		u8 INX();
-		u8 INY();
-		u8 JMP(); // Jump??
-		u8 JSR();
+		u8 EOR(); // Exclusive OR operation
+		u8 INC(); // Increment Value in Memory
+		u8 INX(); // Increment X Register
+		u8 INY(); // Increment Y Register
+		u8 JMP(); // Jump
+		u8 JSR(); // Jump to Subroutine
 		u8 LDA(); // Load Accumulator
 		u8 LDX(); // Load X Register with value
 		u8 LDY(); // Load Y Register with value
-		u8 LSR();
-		u8 NOP();
-		u8 ORA();
-		u8 PHA();
-		u8 PHP();
-		u8 PLA();
-		u8 PLP();
-		u8 ROL();
-		u8 ROR();
-		u8 RTI();
-		u8 RTS();
-		u8 SBC();
-		u8 SEC();
-		u8 SED();
-		u8 SEI(); // Set Enable Interrupt
+		u8 LSR(); // Logical Shift Right
+		u8 NOP(); // NOPE -> No Operation
+		u8 ORA(); // OR Operation
+		u8 PHA(); // Push Accumulator to Stack	
+		u8 PHP(); // Push Status Register to Stack
+		u8 PLA(); // Pull Accumulator from Stack	
+		u8 PLP(); // Pull Status Register from Stack
+		u8 ROL(); // Rotate Left
+		u8 ROR(); // Rotate Right
+		u8 RTI(); // Return from Interrupt
+		u8 RTS(); // Return from Subroutine
+		u8 SBC(); // Subtract with Carry
+		u8 SEC(); // Set Carry
+		u8 SED(); // Set Decimal
+		u8 SEI(); // Set Disable Interrupt
 		u8 STA(); // Store Value in Accumulator into Memory Address
-		u8 STX();
-		u8 STY();
-		u8 TAX();
-		u8 TAY();
-		u8 TSX();
-		u8 TXA();
-		u8 TXS();
-		u8 TYA();
+		u8 STX(); // Store Value in X Register into Memory Address
+		u8 STY(); // Store Value in X Register into Memory Address
+		u8 TAX(); // Transfer A To X
+		u8 TAY(); // Transfer A To Y
+		u8 TSX(); // Transfer SP To X
+		u8 TXA(); // Transfer X To A
+		u8 TXS(); // Transfer X To SP
+		u8 TYA(); // Transfer Y To A
 
 		u8 XXX(); // Illegal Opcodes
 
