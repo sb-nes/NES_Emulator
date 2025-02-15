@@ -530,7 +530,7 @@ namespace NES::CPU {
 
 			{ // 5x 
 				{
-					{ "BVC", &R6502::RTI, &R6502::REL, 2 }, // * -> Cycle count can increase
+					{ "BVC", &R6502::BVC, &R6502::REL, 2 }, // * -> Cycle count can increase
 					{ "EOR", &R6502::EOR, &R6502::IZY, 5 }, // * -> Cycle count can increase
 
 					{}, // Illegal -> KIL
@@ -865,7 +865,7 @@ namespace NES::CPU {
 			}
 		}
 
-		void print_status_register();
+		void debug_status_register();
 
 		// Writes to the Memory on the Address Bus
 		void write_memory(u16 address) {
@@ -927,7 +927,7 @@ namespace NES::CPU {
 			SetFlag(StateFlags::I, _delay_change_value);
 			delay_change = &R6502::do_nothing_like_its_nobodys_business;
 #if CPU_TEST
-			print_status_register();
+			debug_status_register();
 #endif // CPU_TEST
 		}
 	};

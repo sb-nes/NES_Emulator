@@ -116,14 +116,15 @@ namespace NES::CPU {
 	u8 R6502::BCC() {
 #if CPU_TEST
 		std::cout << "Branch if Carry Clear: " << "\n";
-		std::cout << _program_counter << " " << hexString(_program_counter, 2) << "\n";
+		std::cout << hexString(GetFlag(StateFlags::C), 1) << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 #endif
 		if (!GetFlag(StateFlags::C)) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
 #if CPU_TEST
-			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
 			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
@@ -144,14 +145,15 @@ namespace NES::CPU {
 	u8 R6502::BCS() {
 #if CPU_TEST
 		std::cout << "Branch if Carry Set: " << "\n";
-		std::cout << _data << " " << hexString(_data, 2) << "\n";
+		std::cout << hexString(GetFlag(StateFlags::C), 1) << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 #endif
 		if (GetFlag(StateFlags::C)) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
 #if CPU_TEST
-			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
 			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
@@ -172,14 +174,15 @@ namespace NES::CPU {
 	u8 R6502::BEQ() {
 #if CPU_TEST
 		std::cout << "Branch if Equal: " << "\n";
-		std::cout << _data << " " << hexString(_data, 2) << "\n";
+		std::cout << hexString(GetFlag(StateFlags::Z), 1) << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 #endif
 		if (GetFlag(StateFlags::Z)) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
 #if CPU_TEST
-			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
 			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
@@ -222,14 +225,15 @@ namespace NES::CPU {
 	u8 R6502::BMI() {
 #if CPU_TEST
 		std::cout << "Branch if Minus: " << "\n";
-		std::cout << _data << " " << hexString(_data, 2) << "\n";
+		std::cout << hexString(GetFlag(StateFlags::N), 1) << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 #endif
 		if (GetFlag(StateFlags::N)) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
 #if CPU_TEST
-			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
 			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
@@ -251,14 +255,15 @@ namespace NES::CPU {
 	u8 R6502::BNE() {
 #if CPU_TEST
 		std::cout << "Branch if Not Equal: " << "\n";
-		std::cout << _data << " " << hexString(_data, 2) << "\n";
+		std::cout << hexString(GetFlag(StateFlags::Z), 1) << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 #endif
 		if (!GetFlag(StateFlags::Z)) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
 #if CPU_TEST
-			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
 			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
@@ -280,14 +285,15 @@ namespace NES::CPU {
 	u8 R6502::BPL() {
 #if CPU_TEST
 		std::cout << "Branch if Plus: " << "\n";
-		std::cout << _data << " " << hexString(_data, 2) << "\n";
+		std::cout << hexString(GetFlag(StateFlags::N), 1) << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 #endif
 		if (!GetFlag(StateFlags::N)) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
 #if CPU_TEST
-			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
 			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
@@ -332,14 +338,15 @@ namespace NES::CPU {
 	u8 R6502::BVC() {
 #if CPU_TEST
 		std::cout << "Branch if Overflow Clear: " << "\n";
-		std::cout << _data << " " << hexString(_data, 2) << "\n";
+		std::cout << hexString(GetFlag(StateFlags::V), 1) << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 #endif
 		if (!GetFlag(StateFlags::V)) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
 #if CPU_TEST
-			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
 			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
@@ -361,14 +368,15 @@ namespace NES::CPU {
 	u8 R6502::BVS() {
 #if CPU_TEST
 		std::cout << "Branch if Overflow Set: " << "\n";
-		std::cout << _data << " " << hexString(_data, 2) << "\n";
+		std::cout << hexString(GetFlag(StateFlags::C), 1) << "\n";
+		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 #endif
 		if (GetFlag(StateFlags::V)) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
 #if CPU_TEST
-			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 2) << "\n\n";
+			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
 			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
@@ -1188,9 +1196,9 @@ namespace NES::CPU {
 	// Illegal Opcodes
 	u8 R6502::XXX() { return 0; }
 
-	void R6502::print_status_register() {
 #if CPU_TEST
+	void R6502::debug_status_register() {
 		std::cout << "Status Register: " << binString(_status_register, 8) << "\n\n";
-#endif
 	}
+#endif
 }

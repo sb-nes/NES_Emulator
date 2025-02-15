@@ -198,10 +198,10 @@ namespace NES::CPU {
 			_ram->write(0x047A, 0x02); // memory to skip
 
 			_ram->write(0x047B, 0x10); // BPL
-			_ram->write(0x047C, 0x00); // memory to skip
+			_ram->write(0x047C, 0x01); // memory to skip
 
 			_ram->write(0x047D, 0x50); // BVC
-			_ram->write(0x047E, 0x00); // memory to skip
+			_ram->write(0x047E, 0x01); // memory to skip
 
 			_ram->write(0x047F, 0x70); // BVS
 			_ram->write(0x0480, 0x03); // memory to skip
