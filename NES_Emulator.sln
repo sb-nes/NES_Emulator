@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35707.178 d17.12
+VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NES_Emulation_Engine", "NES_Emulation_Engine\NES_Emulation_Engine.vcxproj", "{8F46FDAF-C0B3-4556-B7F4-410FA859F182}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "test\test.vcxproj", "{381939BB-E1E5-4D11-8EB9-42C2006D34DC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +17,15 @@ Global
 		{8F46FDAF-C0B3-4556-B7F4-410FA859F182}.Debug|x64.Build.0 = Debug|x64
 		{8F46FDAF-C0B3-4556-B7F4-410FA859F182}.Release|x64.ActiveCfg = Release|x64
 		{8F46FDAF-C0B3-4556-B7F4-410FA859F182}.Release|x64.Build.0 = Release|x64
+		{381939BB-E1E5-4D11-8EB9-42C2006D34DC}.Debug|x64.ActiveCfg = Debug|x64
+		{381939BB-E1E5-4D11-8EB9-42C2006D34DC}.Debug|x64.Build.0 = Debug|x64
+		{381939BB-E1E5-4D11-8EB9-42C2006D34DC}.Release|x64.ActiveCfg = Release|x64
+		{381939BB-E1E5-4D11-8EB9-42C2006D34DC}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D2BB7C0D-345B-4CBA-A7B6-2D0520A643A3}
 	EndGlobalSection
 EndGlobal

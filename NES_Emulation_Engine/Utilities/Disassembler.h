@@ -19,6 +19,16 @@ namespace NES::Utilities {
 			return "0x"+t;
 		}
 
+		std::string binString(u32 value, u8 length) {
+			std::string t(length, '0');
+
+			for (int i{ length - 1 }; i >= 0; --i, value >>= 1) {
+				t[i] = value & 0x1 ? '1' : '0';
+			}
+
+			return "0b" + t;
+		}
+
 	} // anonymous namespace
 
 	// TODO: Build a Disasm

@@ -11,11 +11,8 @@ namespace NES::Cartridge {
 
 	// A NES 2.0 file contains a sixteen-byte header, followed by Trainer, PRG-ROM, CHR-ROM and Miscellaneous ROM data.
 
-	
-
 	class GameCard {
 	public:
-
 
 		void init_program_memory(std::ifstream& reader){
 			_program_memory.resize(_program_banks_count * 16384); // Each Program ROM chip size is 16KB
@@ -60,5 +57,5 @@ namespace NES::Cartridge {
 		u64							_size{ 0 };
 	};
 
-	GameCard* load_file(std::string file);
+	std::shared_ptr<NES::Cartridge::GameCard> load_file(std::string file);
 }

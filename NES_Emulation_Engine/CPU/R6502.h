@@ -347,7 +347,6 @@ namespace NES::CPU {
 
 	private:
 		Bus* _bus{ nullptr };
-		bool _write_to_mem{ false };
 
 		// Registers -> X, Y, Status -> All 8-bits
 		u8		_x_register{ 0x00 };
@@ -370,7 +369,7 @@ namespace NES::CPU {
 		u8		(R6502::* read)(u16, bool) {}; // Write Function Pointer
 		void	(R6502::*delay_assign)() = &R6502::do_nothing_like_its_nobodys_business; // Delay Interrupt Disable Change Function Pointer
 		void	(R6502::*delay_change)() = &R6502::do_nothing_like_its_nobodys_business; // Delay Interrupt Disable Change Function Pointer
-		u8		_delay_change_value{ 0 };
+		u8		_buffer_value{ 0 };
 
 #if CPU_TEST
 		u16		_instructions_count{ 0 };
@@ -925,7 +924,7 @@ namespace NES::CPU {
 		}
 		
 		void interrupt_disable_change() {
-			SetFlag(StateFlags::I, _delay_change_value);
+			SetFlag(StateFlags::I, _buffer_value);
 			delay_change = &R6502::do_nothing_like_its_nobodys_business;
 #if CPU_TEST
 			debug_status_register();

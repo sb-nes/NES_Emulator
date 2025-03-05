@@ -1,12 +1,25 @@
 #pragma once
 
 #include "../Common/CommonHeaders.h"
+#include "PPU_Bus.h"
+
+// 1 cycle = 1 pixel
+// 341 cycles per scanline
+// 261 scanlines for NTSC, 312 scanlines for PAL
+// Vertical Blank Period -> when scanlines go past screen height of 240(PAL)/224(NTSC)
+
+// During the vertical blank period, the cpu is setting up the ppu for the next frame
+// After the last scanline, it jumps to -1 scanline instead of +0 scanline
 
 namespace NES::PPU { // Picture Processing Unit
 	class R2C02 {
 	public:
-		R2C02() {
+		R2C02() { 
+			_bus = new PPU_Bus();
+		}
 
+		~R2C02() {
+			delete _bus;
 		}
 
 		// CPU Address BUS read and write:
@@ -25,11 +38,62 @@ namespace NES::PPU { // Picture Processing Unit
 			// Clock function of the PPU
 		}
 
-	private:
-		//NES::CPU::Bus* _bus;
+		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) {
+			_bus->connect_card(card);
+		}
 
-		s16 _scanline{ 0 };
-		s16 _cycle{ 0 };
+	private:
+		PPU_Bus*	_bus{ nullptr };
+
+		u8			_address_latch{ 0x00 }; // writing to the Low byte or the High byte
+		u8			_ppu_data_buffer{ 0x00 }; // since, reading data from ppu is delayed by 1 cycle
+
+		u16			_address_abs{ 0x0000 };
+		s16			_scanline{ 0 };
+		s16			_cycle{ 0 };
+
+		union {
+			struct
+			{
+				u8 nametable_select_y : 1; // N
+				u8 nametable_select_x : 1; // N
+				u8 increment_mode : 1; // I
+				u8 sprite_tile_select : 1; // S
+				u8 background_tile_select : 1; // B
+				u8 sprite_height : 1; // H
+				u8 ppu_master_slave_mode : 1; // P
+				u8 nmi_enable : 1; // V
+			};
+
+			u8 value;
+		} _ctrl_register;
+
+		union {
+			struct
+			{
+				u8 grayscale : 1; // G
+				u8 background_left_column_enable : 1; // m
+				u8 sprites_left_column_enable : 1; // M
+				u8 sprite_enable: 1; // b
+				u8 background_enable: 1; // s
+				u8 colour_emphasis_red: 1; // R
+				u8 colour_emphasis_green : 1; // G
+				u8 colour_emphasis_blue : 1; // B
+			};
+
+			u8 value;
+		} _mask_register;
+
+		union {
+			struct {
+				u8 unused : 5; // allocate 5 bits using bit-fields | read resets write pair for $2005/$2006
+				u8 sprite_overflow : 1; // allocate 1 bit | O
+				u8 sprite_0_hit : 1; // allocate 1 bit | S
+				u8 v_blank : 1; // allocate 1 bit | V -> Screen Space[0] or Vertical Blank Space[1]
+			};
+
+			u8 value;
+		} _status_register;
 
 	};
 }

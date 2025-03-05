@@ -423,7 +423,7 @@ namespace NES::CPU {
 
 	// Clear Interrupt Disable
 	u8 R6502::CLI() {
-		_delay_change_value = 0;
+		_buffer_value = 0;
 		delay_assign = &R6502::assign_delay_interrupt_disable_change; // The effect of changing Interrupt Disable [I] flag is delayed 1 instruction, because the flag is changed after IRQ is polled, delaying the effect until IRQ is polled in the next instruction like with CLI and SEI.
 
 #if CPU_TEST
@@ -861,7 +861,7 @@ namespace NES::CPU {
 		_data = read_memory(0x0100 + _stack_pointer) & 0xCF;
 		_data |= StateFlags::U;
 
-		_delay_change_value = (_data & StateFlags::I) >> 2;
+		_buffer_value = (_data & StateFlags::I) >> 2;
 		_data &= ~StateFlags::I;
 		delay_assign = &R6502::assign_delay_interrupt_disable_change; // The effect of changing Interrupt Disable [I] flag is delayed 1 instruction, because the flag is changed after IRQ is polled, delaying the effect until IRQ is polled in the next instruction like with CLI and SEI.
 		
@@ -1048,7 +1048,7 @@ namespace NES::CPU {
 
 	// Set Interrupt Disable
 	u8 R6502::SEI() { // I = 1
-		_delay_change_value = 1;
+		_buffer_value = 1;
 		delay_assign = &R6502::assign_delay_interrupt_disable_change; // The effect of changing Interrupt Disable [I] flag is delayed 1 instruction, because the flag is changed after IRQ is polled, delaying the effect until IRQ is polled in the next instruction like with CLI and SEI.
 
 #if CPU_TEST

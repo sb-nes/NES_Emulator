@@ -7,10 +7,20 @@ namespace NES::Cartridge {
 
 	namespace {
 
-		bool check_ines_format(char* name) { return (name == "NES"); }
+		bool check_ines_format(char* name) { 
+			bool chk = true;
+			char chk_header[] = "NES";
 
-		struct iNES_Header { // Format for iNES Header - 16 bytes
-			char name[4]; // is it needed? -> 4 bytes | NES<EOF> | check_id
+			for (int i = 0; i < 3; ++i) {
+				if (name[i] != chk_header[i]) {
+					chk = false; 
+					break;
+				}
+			}
+			return chk && (name[4]='\32'); // \32 -> <EOF>
+		}
+
+		struct iNES_Header { // Format for iNES Header - 16 bytes [removing check_name from it makes 14 bytes]
 
 			u8 PRG_ROM_Count; // PRG-ROM division/banks
 			u8 CHR_ROM_Count; // CHR-ROM division/banks
@@ -29,6 +39,8 @@ namespace NES::Cartridge {
 
 			char unused[5];
 		} header; 
+
+		char name[4]; // | NES<EOF> | check_id
 
 	} // anonymous namespace
 
@@ -72,17 +84,19 @@ namespace NES::Cartridge {
 	}
 
 	// for .NES files [iNES format]
-	GameCard* load_file(std::string file) {
+	std::shared_ptr<NES::Cartridge::GameCard> load_file(std::string file) {
 		assert(std::filesystem::exists(file));
 
-		GameCard* card = new GameCard();
+		std::shared_ptr<NES::Cartridge::GameCard> card = std::make_shared<NES::Cartridge::GameCard>();
 		card->set_cartridge_size(std::filesystem::file_size(file));
 		{
-			std::ifstream reader(file, std::ios::binary);
+			std::ifstream reader(file, std::ios::in | std::ios::binary);
 			if (reader.is_open()) {
-				reader.read((char*)&header, sizeof(iNES_Header));
 
-				assert(check_ines_format(header.name), "Not an INES/.NES format ROM!!");
+				reader.read((char*)&name, sizeof(name));
+				assert(check_ines_format(name));
+
+				reader.read((char*)&header, sizeof(iNES_Header));
 
 				// Trainer Area -> 512 bytes -> training information -> check bit 2 of flag 6
 				if (header.flag_6 & 0x04) {

@@ -11,8 +11,12 @@ namespace NES::CPU {
 	class Bus {
 	public:
 		Bus() {
+			_cartridge = Cartridge::load_file("C:/Users/shrey/source/repos/NES_Emulator/x64/Debug/test.nes");
+
 			_ram = new NES::Memory::RAM();
 			_ppu = new NES::PPU::R2C02();
+
+			_ppu->connect_card(_cartridge);
 		}
 
 		~Bus() { // Delete Pointers
@@ -40,16 +44,22 @@ namespace NES::CPU {
 			TEST_PROGRAM_BRANCH
 #endif // CPU_TEST
 
+#if PPU_TEST
+
+#endif // PPU_TEST
+
 		}
 
 		// Control Bus Function -> To signal if the cpu is reading or writing
 
 		void set_cartridge_inserted(bool value) { _cartridge_inserted = value; }
 
+
 		void disassembleRAM() { _ram->disassemble_wram(); }
 		void disassembleRAM(u32 start, u32 end) { // Disassembler - [Start, End)
 			_ram->disassemble_wram(start, end); 
 		}
+		void ppu_clock() { _ppu->clock(); }
 
 		// Writes Data to the Address Location on the Bus
 		void write(u16 address, u8 data);
@@ -59,11 +69,11 @@ namespace NES::CPU {
 	private:
 
 		// R6502 _cpu;
-		// Instance or whatever data is needed by PPU from the cartridge
+		// Instance or whatever data is needed by CPU/PPU from the cartridge
 		bool										_cartridge_inserted{ false };
 		std::shared_ptr<NES::Cartridge::GameCard>	_cartridge;
 
-		// I/O Registers
+		// I/O Hardware
 		NES::PPU::R2C02*							_ppu;
 		NES::Memory::RAM*							_ram;
 
