@@ -90,7 +90,9 @@ namespace NES::CPU {
 #endif
 
 		default:
-			return 0x00; // Address Out of Range | Like how would this even happen? address range for uint_16 -> [0x0000, 0xFFFF] ??
+			break;
 		}
+
+		return 0x00; // Address Out of Range | Like how would this even happen? address range for uint_16 -> [0x0000, 0xFFFF] ??
 	}
 }

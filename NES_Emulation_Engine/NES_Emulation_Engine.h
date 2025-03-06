@@ -7,3 +7,99 @@
 #define NTSC_SCREEN_HEIGHT 262
 #define PAL_SCREEN_HEIGHT 312
 #define RENDER_SCALE_MULTIPLIER 2
+
+struct NES_Colour {
+	std::string				name{ "Black" };
+	u8						red{ 0 };
+	u8						green{ 0 };
+	u8						blue{ 0 };
+};
+
+// PAL Colours lookup-table [2C07] -> Persune's Palette Generator 0.17.0 -> NESDevWiki
+const std::array<std::array<NES_Colour, 16>, 4> _pal_colour_lookup{ // Row-Major
+	{ // Array Bracket
+		{ 
+			{
+				{"Grey3",98,98,98},
+				{"Blue4",0,46,152},
+				{"DeepBlue4",12,17,194},
+				{"Violet4",59,0,194},
+				{"Purple4",101,0,152},
+				{"Magenta4",125,0,78},
+				{"Red4",125,0,0},
+				{"Brown4",101,25,0},
+				{"Olive4",59,54,0},
+				{"DeepGreen4",12,79,0},
+				{"Green4",0,91,0},
+				{"Emerald4",0,89,0},
+				{"Teal4",0,73,78},
+				{"Blacker Than Black",0,0,0},
+				{"Black",0,0,0},
+				{"Black",0,0,0}
+			}
+		}, // 0x
+
+		{
+			{
+				{"Grey2",171,171,171},
+				{"Blue3",0,100,243},
+				{"DeepBlue3",53,60,255},
+				{"Violet3",118,27,255},
+				{"Purple3",174,10,243},
+				{"Magenta3",206,13,143},
+				{"Red3",206,35,28},
+				{"Brown3",174,71,0},
+				{"Olive3",118,111,0},
+				{"DeepGreen3",53,144,0},
+				{"Green3",0,161,0},
+				{"Emerald3",0,158,28},
+				{"Teal3",0,136,143},
+				{"Black",0,0,0},
+				{"Black",0,0,0},
+				{"Black",0,0,0}
+			}
+		}, // 1x
+
+		{
+			{
+				{"White",255,255,255},
+				{"Blue2",78,181,255},
+				{"DeepBlue2",133,140,255},
+				{"Violet2",200,107,255},
+				{"Purple2",255,89,255},
+				{"Magenta2",255,92,225},
+				{"Red2",255,115,107},
+				{"Brown2",255,152,5},
+				{"Olive2",200,192,0},
+				{"DeepGreen2",133,226,0},
+				{"Green2",76,244,5},
+				{"Emerald2",43,241,107},
+				{"Teal2",43,218,225},
+				{"Grey4",78,78,78},
+				{"Black",0,0,0},
+				{"Black",0,0,0}
+			}
+		}, // 2x
+
+		{
+			{
+				{"White",255,255,255},
+				{"Blue1",184,225,255},
+				{"DeepBlue1",206,209,255},
+				{"Violet1",232,196,255},
+				{"Purple1",255,189,255},
+				{"Magenta1",255,190,243},
+				{"Red1",255,199,196},
+				{"Brown1",255,214,156},
+				{"Olive1",232,230,132},
+				{"DeepGreen1",206,243,132},
+				{"Green1",184,250,156},
+				{"Emerald1",171,249,196},
+				{"Teal1",171,240,243},
+				{"Grey1",184,184,184},
+				{"Black",0,0,0},
+				{"Black",0,0,0}
+			}
+		}  // 3x
+	}
+};

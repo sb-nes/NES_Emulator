@@ -12,6 +12,7 @@ namespace NES::CPU {
 	public:
 		Bus() {
 			_cartridge = Cartridge::load_file("C:/Users/shrey/source/repos/NES_Emulator/x64/Debug/test.nes");
+			_cartridge_inserted = true;
 
 			_ram = new NES::Memory::RAM();
 			_ppu = new NES::PPU::R2C02();
@@ -60,6 +61,10 @@ namespace NES::CPU {
 			_ram->disassemble_wram(start, end); 
 		}
 		void ppu_clock() { _ppu->clock(); }
+
+		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
+			return _ppu->get_pattern_table(pattern_table_idx, palette_idx);
+		}
 
 		// Writes Data to the Address Location on the Bus
 		void write(u16 address, u8 data);

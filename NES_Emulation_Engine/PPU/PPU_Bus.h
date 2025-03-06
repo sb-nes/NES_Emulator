@@ -9,6 +9,7 @@ namespace NES::PPU {
 	public:
 
 		u8 read_palette_colour(u8 palette_index, u8 colour_index) {
+			assert(colour_index >> 2);
 			return _palette_RAM[(palette_index * 4) + colour_index]; // could have used palette_index<<2 to multiply by 4
 		}
 

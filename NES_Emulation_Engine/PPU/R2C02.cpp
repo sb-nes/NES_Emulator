@@ -16,10 +16,17 @@ namespace NES::PPU { // [Picture Processing Unit]
 	// Writes to the Address Bus
 	void R2C02::cpubus_write(u16 address, u8 data) {
 		switch (get_cpu_address(address)) {
+			case 0x0000: // PPUCTRL -> Control
+				_ctrl_register.value = data; 
+			break; 
 
-		case 0x0000: _ctrl_register.value = data; break; // PPUCTRL -> Control
-		case 0x0001: _mask_register.value = data; break; // PPUMASK -> Mask
-		case 0x0002: break; // PPUSTATUS -> Status
+			case 0x0001: // PPUMASK -> Mask
+				_mask_register.value = data; 
+			break; 
+
+			case 0x0002: // PPUSTATUS -> Status
+			break; 
+
 		case 0x0003: break; // OAMADDR -> [Object Attribute Memory] OAM address
 		case 0x0004: break; // OAMDATA -> [Object Attribute Memory] OAM data
 		case 0x0005: break; // PPUSCROLL -> Scroll
@@ -59,9 +66,12 @@ namespace NES::PPU { // [Picture Processing Unit]
 			break; 
 
 			case 0x0007: // PPUDATA -> [Picture Processing Unit] Memory Data
+				_data = _ppu_read_buffer; // PPU bus reads are too slow and cannot complete in time to service the CPU read. Thus, it has an internal buffer for storing data to be delivered later.
+				_ppu_read_buffer = read(address);
 
-			break; 
-		
+				if (address >= 0x3F00) data = _ppu_read_buffer;
+				return _data; 
+
 			default:
 			break;
 		}
@@ -72,16 +82,62 @@ namespace NES::PPU { // [Picture Processing Unit]
 	// Writes to the PPU's Address Bus
 	void R2C02::write(u16 address, u8 data) {
 		address = get_address(address);
-
+		_bus->write(address, data);
 	}
 
 	// Reads from the PPU's Address Bus
 	u8 R2C02::read(u16 address, bool bReadOnly) {
 		u8 data = 0x00;
 		address = get_address(address);
-
-		return 0;
+		return _bus->read(address);
 	}
 
+	sprite_tile R2C02::get_tile_at_address(u16 address, u8 palette_idx) {
+		sprite_tile tile{};
+
+		for (u8 i = 0; i < 8; ++i) {
+			u8 tile_lsb = read(address + i); // Least Significant Bit of the Tile
+			u8 tile_msb = read(address + 8 + i); // Most Significant Bit of the Tile
+				for (u8 j = 0; j < 8; ++j) {
+					u8 pixel_value = (tile_lsb & 0x01) + ((tile_msb & 0x01) << 1);
+					// shift bit to the right
+					tile_lsb >>= 1;
+					tile_msb >>= 1;
+
+					// get colour and store it
+					tile[i][7-j] = _bus->read_palette_colour(palette_idx, pixel_value);
+				}
+		}
+
+		return tile;
+	}
+
+	pattern_table R2C02::get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
+		pattern_table table;
+		//table.push_back();
+
+		for (u16 i = 0; i < 16; ++i) { // Y
+			for (u16 j = 0; j < 16; ++j) { // X
+				u16 offset = (i * 256) + (j * 16);
+				u16 address = (0x1000 * pattern_table_idx) + offset;
+
+				for (u8 r = 0; r < 8; ++r) {
+					u8 tile_lsb = read(address + r); // Least Significant Bit of the Tile
+					u8 tile_msb = read(address + 8 + r); // Most Significant Bit of the Tile
+					for (u8 c = 0; c < 8; ++c) {
+						u8 pixel_value = (tile_lsb & 0x01) + ((tile_msb & 0x01) << 1);
+						// shift bit to the right
+						tile_lsb >>= 1;
+						tile_msb >>= 1;
+
+						// get colour and store it
+						table[(i * 8) + r][(j * 8) + 7 - c] = _bus->read_palette_colour(palette_idx, pixel_value);
+					}
+				}
+			}
+		}
+
+		return table;
+	}
 
 }

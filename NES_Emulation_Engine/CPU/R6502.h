@@ -3,6 +3,37 @@
 #include "../Common/CommonHeaders.h"
 #include "Bus.h"
 
+#if OPCODE_DEBUG
+#include <iostream>
+
+namespace {
+
+	const char hexChar[] = "0123456789ABCDEF";
+
+	std::string hexString(u32 value, u8 length) {
+		std::string t(length, '0');
+
+		for (int i{ length - 1 }; i >= 0; --i, value >>= 4) {
+			t[i] = hexChar[value & 0xF];
+		}
+
+		return t;
+	}
+
+	std::string binString(u32 value, u8 length) {
+		std::string t(length, '0');
+
+		for (int i{ length - 1 }; i >= 0; --i, value >>= 1) {
+			t[i] = value & 0x1 ? '1' : '0';
+		}
+
+		return "0b" + t;
+	}
+
+} // anonymous namespace
+
+#endif // OPCODE_DEBUG
+
 // WARNING: If the opcodes and addressing modes are not implemented, then linker will throw a LINK2019 code while assigning their function pointer to lookup.
 
 // NTSC CPU clock cycle delay = 558.65921787709497206703910614525 nanoseconds or 559 nanoseconds
@@ -251,6 +282,29 @@ namespace NES::CPU {
 				++_cycles; // Since, whenever i read, i use one cpu cycle in the read function
 				_opcode = read_memory(_program_counter++);
 
+#if OPCODE_DEBUG
+				std::cout << "0x" << hexString(_program_counter - 1, 4) << " ";
+				std::cout << "0x" << hexString(_opcode, 2) << " " << _lookup[_opcode >> 4][_opcode & 0x0F].name << " ";
+
+				if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMP) {
+					std::cout << "IMP\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMM || 
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZP0 || 
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPX || 
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPY ||
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::REL) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << "\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABS || 
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABX || 
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABY || 
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IND ||
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZX ||
+						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZY) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << "\n";
+				}
+
+#endif // OPCODE_DEBUG
+				
 				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
 				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
 				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
@@ -298,8 +352,6 @@ namespace NES::CPU {
 #else
 			_cycles = 8; // Since it takes time...
 #endif // CPU_TEST
-
-			clock();
 		}
 
 		/// INTERRUPTS ///
@@ -890,6 +942,13 @@ namespace NES::CPU {
 			clock();
 			return data;
 		}
+
+#if OPCODE_DEBUG
+		u8 read_test_memory(u16 address, bool bReadOnly = false) {
+			u8 data{ _bus->read(address) };
+			return data;
+		}
+#endif // OPCODE_DEBUG
 
 		// Handles interrupt calls and points to the Respective Handler
 		void interrupt() {

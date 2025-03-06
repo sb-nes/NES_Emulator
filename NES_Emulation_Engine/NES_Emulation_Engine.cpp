@@ -12,6 +12,8 @@
 
 using namespace NES;
 
+CPU::R6502* _nes_instance;
+
 #if _WIN64
 
 #include <Windows.h>
@@ -23,6 +25,7 @@ using namespace NES;
 // Forward Declarations
 void attach_console();
 void test();
+bool initialize();
 
 /// Window Code ///
 HWND window{ nullptr };
@@ -102,7 +105,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 
 			// Draw a rectangle. 
 			FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1)); // uses a logical brush
-			Rectangle(ps.hdc, 5, 5, 6, 6); // uses a pen
+			Rectangle(ps.hdc, 0, 0, 7, 7); // uses a pen
 			DeleteObject(blackPen);
 			// Restore the original object 
 			SelectObject(ps.hdc, original);
@@ -228,7 +231,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 		// HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TEST));
 		// if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
 
+#if CPU_TEST
 		test(); // CPU/PPU TEST
+#endif // CPU_TEST
+
+		if (!initialize()) return 0;
 
 		while (is_running) {
 			// Engine's update function
@@ -242,11 +249,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			}
 
 			// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
-			// TODO: call clock
+			_nes_instance->clock();
+
+			// Display status of all registers on the window
 
 			hdc = BeginPaint(window, &ps); // Begin Drawing on the Window
 
 			// i. Clear Window?
+			FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1)); // uses a logical brush
 			// ii. Display the render from PPU
 			for (int x = 0; x < SCREEN_HEIGHT; ++x) { // Each Scanline
 				for (int y = 0; y < SCREEN_WIDTH; ++y) { // Each Pixel
@@ -264,9 +274,49 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			
 			// TODO: set the timing circuit code for the cpu/ppu clock
 		}
+		delete _nes_instance;
 	}
 
 	return 1;
+}
+
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType)
+	{
+		// Handle the CTRL-C signal.
+	case CTRL_C_EVENT:
+		printf("Ctrl-C event\n\n");
+		Beep(750, 300);
+		return TRUE;
+
+		// CTRL-CLOSE: confirm that the user wants to exit.
+	case CTRL_CLOSE_EVENT:
+		Beep(600, 200);
+		printf("Ctrl-Close event\n\n");
+		return TRUE;
+
+		/*
+		// Pass other signals to the next handler.
+	case CTRL_BREAK_EVENT:
+		Beep(900, 200);
+		printf("Ctrl-Break event\n\n");
+		return FALSE;
+
+	case CTRL_LOGOFF_EVENT:
+		Beep(1000, 200);
+		printf("Ctrl-Logoff event\n\n");
+		return FALSE;
+
+	case CTRL_SHUTDOWN_EVENT:
+		Beep(750, 500);
+		printf("Ctrl-Shutdown event\n\n");
+		return FALSE;
+		*/
+
+	default:
+		return FALSE;
+	}
 }
 
 void attach_console() {
@@ -281,10 +331,12 @@ void attach_console() {
 	freopen_s(&stream, "CON", "w", stdout);
 	freopen_s(&stream, "CON", "w", stderr);
 	freopen_s(&stream, "CON", "r", stdin);
+
+	SetConsoleCtrlHandler(CtrlHandler, TRUE);
 }
 
 void test() {
-	std::cout << "Initializing!\n\n";
+	std::cout << "Test Initialize!\n";
 
 	CPU::R6502* Cpu = new CPU::R6502();
 
@@ -304,8 +356,20 @@ void test() {
 
 	delete Cpu;
 
-	std::cout << "Done...\n Press Any Key To Continue! \n";
+	std::cout << "Finished...\n\n";
 	//getchar();
+}
+
+bool initialize() {
+	std::cout << "Initializing!\n";
+
+	_nes_instance = new CPU::R6502();
+
+	_nes_instance->SetBus(new CPU::Bus());
+	_nes_instance->reset();
+
+	std::cout << "Ready...\n\n";
+	return true;
 }
 
 #else

@@ -34,6 +34,9 @@ namespace NES::PPU { // Picture Processing Unit
 		// Reads from the PPU's Address Bus
 		u8 read(u16 address, bool bReadOnly = false);
 
+		[[nodiscard]] sprite_tile get_tile_at_address(u16 address, u8 palette_idx);
+		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx);
+
 		void clock() {
 			// Clock function of the PPU
 		}
@@ -46,7 +49,8 @@ namespace NES::PPU { // Picture Processing Unit
 		PPU_Bus*	_bus{ nullptr };
 
 		u8			_address_latch{ 0x00 }; // writing to the Low byte or the High byte
-		u8			_ppu_data_buffer{ 0x00 }; // since, reading data from ppu is delayed by 1 cycle
+		u8			_ppu_read_buffer{ 0x00 }; // since, reading data from ppu is delayed by 1 cycle
+		u8			_data{ 0x00 };
 
 		u16			_address_abs{ 0x0000 };
 		s16			_scanline{ 0 };

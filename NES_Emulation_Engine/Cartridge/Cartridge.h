@@ -34,6 +34,8 @@ namespace NES::Cartridge {
 		void set_mapper(std::shared_ptr<Mapper> map) { _mapper = map; }
 		std::shared_ptr<Mapper> get_mapper() { return _mapper; }
 
+		
+
 		// Writes Data to the Address Location on the Bus
 		void cpu_write(u16 address, u8 data);
 		// Reads Data from the Address Location on the Bus
