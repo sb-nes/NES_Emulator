@@ -8,13 +8,27 @@ namespace NES::PPU {
 	class PPU_Bus {
 	public:
 
+		PPU_Bus() {
+			reset();
+		}
+
 		u8 read_palette_colour(u8 palette_index, u8 colour_index) {
-			assert(colour_index >> 2);
+			assert(!(colour_index >> 2));
 			return _palette_RAM[(palette_index * 4) + colour_index]; // could have used palette_index<<2 to multiply by 4
+		}
+
+		u8* get_palette_ram() {
+			return _palette_RAM;
 		}
 
 		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) {
 			_card = card;
+		}
+
+		void reset() {
+			for (int i{ 0 }; i < 32; ++i) {
+				_palette_RAM[i] = (i & 0x03);
+			}
 		}
 
 		void write(u16 address, u8 data);

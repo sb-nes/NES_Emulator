@@ -50,7 +50,6 @@ namespace NES::PPU { // Picture Processing Unit
 
 		u8			_address_latch{ 0x00 }; // writing to the Low byte or the High byte
 		u8			_ppu_read_buffer{ 0x00 }; // since, reading data from ppu is delayed by 1 cycle
-		u8			_data{ 0x00 };
 
 		u16			_address_abs{ 0x0000 };
 		s16			_scanline{ 0 };

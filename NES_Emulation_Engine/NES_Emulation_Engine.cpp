@@ -13,6 +13,7 @@
 using namespace NES;
 
 CPU::R6502* _nes_instance;
+pattern_table table;
 
 #if _WIN64
 
@@ -31,6 +32,17 @@ bool initialize();
 HWND window{ nullptr };
 WNDCLASSEX wc;
 HINSTANCE hInst;
+
+// Pixel Array Code
+static BITMAPINFO		_frame_bitmap_info; // to tell GDI about our pixel format
+static HBITMAP			_frame_bitmap = 0; // bitmap handle to hold/encapsulate info and array data
+static HDC				_frame_device_context = 0;
+
+struct {
+	int		width;
+	int		height;
+	u32*	pixels;
+} _frame = { 0 };
 
 // About Box Window Procedure
 INT_PTR CALLBACK about_proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -55,9 +67,9 @@ INT_PTR CALLBACK about_proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 // Main Window Procedure
 LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
-	PAINTSTRUCT ps;
-	HDC hdc;
-	LPCWSTR greeting = L"Hello, Windows desktop!";
+	RECT rc;
+	//LPCWSTR greeting = L"Hello, Windows desktop!";
+	//TextOutW(hdc, 5, 5, greeting, wcslen(greeting)); // wcslen -> strlen for wide-string
 
 	switch (msg) {
 	case WM_COMMAND:
@@ -82,43 +94,32 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 
 	case WM_PAINT: // The application receives a WM_PAINT mssg when part of its displayed window must be updated. [lazy message] WM_SIZE comes first
 		{
-			// prepares for drawing -> returns a handle to the display device context used for drawing in the client area
-			// BeginPaint() fills in the PaintStruct structure with information upon repaint request.
+			static PAINTSTRUCT ps;
+			static HDC hdc;
+
 			hdc = BeginPaint(hwnd, &ps);
 
-			// The FillRect function is part of the Graphics Device Interface(GDI), which has powered
-			// Windows graphics for a very long time. In Windows 7, Microsoft introduced a new
-			// graphics engine, named Direct2D, which supports high - performance graphics
-			// operations, such as hardware acceleration. Direct2D is also available for Windows Vista
-			// through the Platform Update for Windows Vista and for Windows Server 2008 through
-			// the Platform Update for Windows Server 2008. (GDI is still fully supported.)
+			// Paint the Rendered Frame to the window | any edits to the render frame should be done in the main function loop
+			BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top,
+				   ps.rcPaint.right - ps.rcPaint.left, ps.rcPaint.bottom - ps.rcPaint.top,
+				   _frame_device_context, ps.rcPaint.left, ps.rcPaint.top, SRCCOPY);
 
-			// Save the original object 
-			HGDIOBJ original = NULL;
-			original = SelectObject(ps.hdc, GetStockObject(DC_PEN));
-
-
-			// Create a pen.             
-			HPEN blackPen = CreatePen(PS_SOLID, 1, 0);
-			// Select the pen. 
-			SelectObject(ps.hdc, blackPen);
-
-			// Draw a rectangle. 
-			FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1)); // uses a logical brush
-			Rectangle(ps.hdc, 0, 0, 7, 7); // uses a pen
-			DeleteObject(blackPen);
-			// Restore the original object 
-			SelectObject(ps.hdc, original);
-
-			//TextOutW(hdc, 5, 5, greeting, wcslen(greeting)); // wcslen -> strlen for wide-string
-
-			// End application-specific layout section.
 			EndPaint(hwnd, &ps); // completes drawing -> ends the paint request and releases the device context.
 		}
 		break;
 
 	case WM_SIZE: // Resize window
 		// Event Not Handled RN
+		_frame_bitmap_info.bmiHeader.biWidth = LOWORD(lparam);
+		_frame_bitmap_info.bmiHeader.biHeight = HIWORD(lparam);
+
+		if (_frame_bitmap) DeleteObject(_frame_bitmap); // if already created, destroy it!
+		_frame_bitmap = CreateDIBSection(NULL, &_frame_bitmap_info, DIB_RGB_COLORS, (void**) & _frame.pixels, 0, 0); // &_frame.pixels -> pixel array pointer
+		SelectObject(_frame_device_context, _frame_bitmap);
+
+		_frame.width = LOWORD(lparam);
+		_frame.height = HIWORD(lparam);
+
 		break;
 
 	case WM_CLOSE: DestroyWindow(hwnd); return 0;
@@ -126,6 +127,15 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 	// In the case of WM_CLOSE, DefWindowProc automatically calls DestroyWindow.
 
 	case WM_DESTROY: PostQuitMessage(0); return 0; // when the window is closed. | WM_CREATE is sent when a window is first created. |
+
+	case WM_CREATE:
+		return 0;
+
+	case WM_MOUSEMOVE:
+		return 0;
+
+	case WM_MOVE:
+		return 0;
 
 	default: break;
 	}
@@ -208,6 +218,16 @@ int create_win32(HINSTANCE hInstance, int nCmdShow, int width, int height) {
 	return 1;
 }
 
+int init_frame() {
+	_frame_bitmap_info.bmiHeader.biSize = sizeof(_frame_bitmap_info.bmiHeader);
+	_frame_bitmap_info.bmiHeader.biPlanes = 1; // No. of colour planes is always 1
+	_frame_bitmap_info.bmiHeader.biBitCount = 32; // Bits per pixel
+	_frame_bitmap_info.bmiHeader.biCompression = BI_RGB; // Compression Type = Uncompressed RGB
+	_frame_device_context = CreateCompatibleDC(0);
+
+	return 1;
+}
+
 // Subsystem Windows: Entry Point
 int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
@@ -218,14 +238,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
 	hInst = hInstance;
 
+	table.resize(128);
+	for (int i = 0; i < 128; ++i) {
+		table[i].resize(128);
+	}
+
 	if (!register_win32()) return 0;
+
+	init_frame(); // Initialize bitmap frame
 
 	if (create_win32(hInstance, SW_SHOWNORMAL, SCREEN_WIDTH*RENDER_SCALE_MULTIPLIER, SCREEN_HEIGHT*RENDER_SCALE_MULTIPLIER)) { 
 		MSG msg{};
 		bool is_running{ true };
-
-		PAINTSTRUCT ps;
-		HDC hdc;
 		
 		// TODO: Read on Keyboard Accelerator Tables: https://learn.microsoft.com/en-us/windows/win32/learnwin32/accelerator-tables
 		// HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TEST));
@@ -251,24 +275,36 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
 			_nes_instance->clock();
 
-			// Display status of all registers on the window
+			// TODO: Display status of all registers on the window
 
-			hdc = BeginPaint(window, &ps); // Begin Drawing on the Window
+			// Get Sprites/Tiles for debug purposes
+			table = _nes_instance->get_pattern_table(0, 0);
 
-			// i. Clear Window?
-			FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1)); // uses a logical brush
-			// ii. Display the render from PPU
-			for (int x = 0; x < SCREEN_HEIGHT; ++x) { // Each Scanline
-				for (int y = 0; y < SCREEN_WIDTH; ++y) { // Each Pixel
-					// TODO: Complete implementation:
-					// if set, get brush/colour
-					// create a rect/rectangle
-					// multiply position with window size multiplier
-					// fill the rect/rectangle
+			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
+
+#if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
+			static unsigned int p = 0;
+			_frame.pixels[(p++) % (_frame.width * _frame.height)] = rand();
+			_frame.pixels[rand() % (_frame.width * _frame.height)] = 0;
+#else
+			for (int y = 127; y >= 0; --y) { // Each Scanline
+				for (int x = 0; x < 128; ++x) { // Each Pixel
+					u8 pixel = table[127-y][x];
+					u32 pixel_colour = (_pal_colour_lookup[pixel >> 8][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 8][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 8][pixel & 0x0F].blue;
+					//_frame.pixels[(y * _frame.width) + x] = pixel_colour;
+					//_frame.pixels[(y * _frame.width) + x + 1] = pixel_colour;
+
+					_frame.pixels[(y * RENDER_SCALE_MULTIPLIER * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)] = pixel_colour;
+					_frame.pixels[(((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)] = pixel_colour;
+					_frame.pixels[(y * RENDER_SCALE_MULTIPLIER * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)+1] = pixel_colour;
+					_frame.pixels[(((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)+1] = pixel_colour;
 				}
 			}
+#endif // SCREEN_TEST
 
-			EndPaint(window, &ps); // completes drawing -> ends the paint request and releases the device context.
+			// Render Next Frame
+			InvalidateRect(window, NULL, FALSE);
+			UpdateWindow(window);
 
 			// TODO: find how to update the window title
 			

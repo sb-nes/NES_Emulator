@@ -392,6 +392,10 @@ namespace NES::CPU {
 			_bus->disassembleRAM(start, end); 
 		}
 
+		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
+			return _bus->get_pattern_table(pattern_table_idx, palette_idx);
+		}
+
 #if CPU_TEST
 		void set_instructions_count(u16 count) { _instructions_count = count; }
 		[[nodiscard]]u16 get_instructions_count() { return _instructions_count; }

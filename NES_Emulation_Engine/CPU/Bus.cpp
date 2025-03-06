@@ -27,7 +27,7 @@ namespace NES::CPU {
 			break;
 
 		case 1: // $2000-$0x3FFF PPU
-			_ppu->write(address, data);
+			_ppu->cpubus_write(address, data);
 			break; 
 
 		case 2: // $4000 I/O Registers + Cartridge
@@ -57,7 +57,7 @@ namespace NES::CPU {
 			return _ram->read(address);
 
 		case 1: // $2000-$0x3FFF PPU
-			return _ppu->read(address);
+			return _ppu->cpubus_read(address);
 
 		case 2: // $4000 I/O Registers + Cartridge
 			if (chip_select_4000(address)) // $4020-5FFF Cartridge
