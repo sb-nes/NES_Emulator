@@ -82,7 +82,6 @@ namespace NES::PPU { // [Picture Processing Unit]
 				_ppu_read_buffer = read(_address_abs);
 
 				if (_address_abs > 0x3F00) data = _ppu_read_buffer;
-				
 				++_address_abs;
 			break;
 

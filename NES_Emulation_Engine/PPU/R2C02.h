@@ -72,8 +72,8 @@ namespace NES::PPU { // Picture Processing Unit
 		union {
 			struct
 			{
-				u8 nametable_select_y : 1; // N
 				u8 nametable_select_x : 1; // N
+				u8 nametable_select_y : 1; // N
 				u8 increment_mode : 1; // I
 				u8 sprite_tile_select : 1; // S
 				u8 background_tile_select : 1; // B
@@ -91,8 +91,8 @@ namespace NES::PPU { // Picture Processing Unit
 				u8 grayscale : 1; // G
 				u8 background_left_column_enable : 1; // m
 				u8 sprites_left_column_enable : 1; // M
-				u8 sprite_enable: 1; // b
-				u8 background_enable: 1; // s
+				u8 background_enable: 1; // b
+				u8 sprite_enable: 1; // s
 				u8 colour_emphasis_red: 1; // R
 				u8 colour_emphasis_green : 1; // G
 				u8 colour_emphasis_blue : 1; // B

@@ -297,8 +297,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
 #if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
 			static unsigned int p = 0;
-			_frame.pixels[(p++) % (_frame.width * _frame.height)] = rand();
-			_frame.pixels[rand() % (_frame.width * _frame.height)] = 0;
+			_frame.pixels[(p++) % (_frame.width * _frame.height)] = (rand() << 16) | (rand() << 8) | rand();
+			_frame.pixels[((rand() << 16) | (rand() << 8) | rand()) % (_frame.width * _frame.height)] = 0;
 #else
 			// Table 1
 			for (int y = 127; y >= 0; --y) { // Each Scanline
@@ -462,7 +462,7 @@ void print_cpu_status() {
 		flag_value = stats & 0x01;
 		stats >>= 1;
 		flag_value = flag_value ? 0x0000FF00 : 0x00FF0000;
-		print_status_value(i, 18, 221, 2, i+1, 0x00000000, flag_value, 0);
+		print_status_value(i, 18, 221, 2, 8-i, 0x00000000, flag_value, 0);
 	}
 }
 
@@ -475,7 +475,7 @@ void print_acuumulator() {
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 217, 2, i + 1, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 217, 2, 2-i, 0x00FFFFFF, 0, 0);
 	}
 }
 
@@ -488,7 +488,7 @@ void print_x_register() {
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 213, 2, i + 1, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 213, 2, 2-i, 0x00FFFFFF, 0, 0);
 	}
 }
 
@@ -501,7 +501,7 @@ void print_y_register() {
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 209, 2, i + 1, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 209, 2, 2-i, 0x00FFFFFF, 0, 0);
 	}
 }
 
@@ -514,7 +514,7 @@ void print_stack_pointer() {
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 205, 2, i + 1, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 205, 2, 2 - i, 0x00FFFFFF, 0, 0);
 	}
 }
 
