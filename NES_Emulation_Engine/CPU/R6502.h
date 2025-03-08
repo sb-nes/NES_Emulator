@@ -277,6 +277,7 @@ namespace NES::CPU {
 
 		// External Signals
 		void clock() { // Per Clock Signal
+			_bus->clock();
 			if (_cycles == 0) {
 				assert(_cycles == 0);
 				++_cycles; // Since, whenever i read, i use one cpu cycle in the read function
@@ -395,6 +396,16 @@ namespace NES::CPU {
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
 			return _bus->get_pattern_table(pattern_table_idx, palette_idx);
 		}
+		
+		[[nodiscard]] palette get_palette() { return _bus->get_palette(); }
+
+		// Get functions for CPU registers
+		[[nodiscard]] u8 get_status_register() { return _status_register; }
+		[[nodiscard]] u8 get_accumulator() { return _accumulator; }
+		[[nodiscard]] u8 get_x_register() { return _x_register; }
+		[[nodiscard]] u8 get_y_register() { return _y_register; }
+		[[nodiscard]] u8 get_stack_pointer() { return _stack_pointer; }
+		[[nodiscard]] u16 get_program_counter() { return _program_counter; }
 
 #if CPU_TEST
 		void set_instructions_count(u16 count) { _instructions_count = count; }

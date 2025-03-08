@@ -8,5 +8,8 @@ using u64 = uint64_t;
 using s8 = int8_t;
 using s16 = int16_t;
 
-using sprite_tile = std::array<std::array<u8, 8>, 8>;
+//using sprite_tile = std::array<std::array<u8, 8>, 8>;
+using sprite_tile = std::vector<std::vector<u8>>;
 using pattern_table = std::vector<std::vector<u8>>;
+
+using palette = std::array<u8, 32>;

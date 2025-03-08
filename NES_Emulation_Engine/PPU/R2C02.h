@@ -36,9 +36,21 @@ namespace NES::PPU { // Picture Processing Unit
 
 		[[nodiscard]] sprite_tile get_tile_at_address(u16 address, u8 palette_idx);
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx);
+		[[nodiscard]] palette get_palette();
 
 		void clock() {
 			// Clock function of the PPU
+			++_cycle; // Works like a scanline across the screen of the CRT
+			if (_cycle >= 341) { // HIT CRT EDGE
+				_cycle = 0;
+				++_scanline;
+				if (_scanline >= 261) { // Past V-Blank Space
+					_scanline = -1;
+					_frame_scan_complete = true;
+				}
+			}
+
+			// TODO: implement rendering here
 		}
 
 		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) {
@@ -54,6 +66,8 @@ namespace NES::PPU { // Picture Processing Unit
 		u16			_address_abs{ 0x0000 };
 		s16			_scanline{ 0 };
 		s16			_cycle{ 0 };
+
+		bool		_frame_scan_complete{ false };
 
 		union {
 			struct

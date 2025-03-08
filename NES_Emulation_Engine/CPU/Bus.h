@@ -60,10 +60,13 @@ namespace NES::CPU {
 		void disassembleRAM(u32 start, u32 end) { // Disassembler - [Start, End)
 			_ram->disassemble_wram(start, end); 
 		}
-		void ppu_clock() { _ppu->clock(); }
+		void clock() { for (int i{ 0 }; i < 3; ++i) _ppu->clock(); }
 
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
 			return _ppu->get_pattern_table(pattern_table_idx, palette_idx);
+		}
+		[[nodiscard]] palette get_palette() {
+			return _ppu->get_palette();
 		}
 
 		// Writes Data to the Address Location on the Bus

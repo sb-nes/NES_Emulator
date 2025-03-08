@@ -30,10 +30,10 @@ namespace NES::PPU {
 		case 1:
 			//_vRAM[]
 
-		case 2:
+		case 2: // $3000-3EFF -> Unused Cartridge Space
 			break;
 
-		case 3: // Palette RAM
+		case 3: // $3F00-3FFF -> Palette RAM
 			_palette_RAM[get_palette_ram_address(address)] = data;
 			break;
 
@@ -58,7 +58,6 @@ namespace NES::PPU {
 
 			case 3: // $3F00-3FFF -> Palette RAM
 				return _palette_RAM[get_palette_ram_address(address)];
-
 			default: 
 			break;
 		}

@@ -12,8 +12,11 @@
 
 using namespace NES;
 
-CPU::R6502* _nes_instance;
-pattern_table table;
+CPU::R6502*				_nes_instance;
+pattern_table			_table1;
+pattern_table			_table2;
+palette					_palette;
+int						_count{ 0 };
 
 #if _WIN64
 
@@ -27,6 +30,15 @@ pattern_table table;
 void attach_console();
 void test();
 bool initialize();
+void print_cpu_status();
+void print_acuumulator();
+void print_x_register();
+void print_y_register();
+void print_stack_pointer();
+void print_program_counter();
+
+void print_status_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count = 0, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000 , int left = 10);
+void print_hex_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count = 0, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int left = 10);
 
 /// Window Code ///
 HWND window{ nullptr };
@@ -67,12 +79,8 @@ INT_PTR CALLBACK about_proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 // Main Window Procedure
 LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
-	RECT rc;
-	//LPCWSTR greeting = L"Hello, Windows desktop!";
-	//TextOutW(hdc, 5, 5, greeting, wcslen(greeting)); // wcslen -> strlen for wide-string
-
 	switch (msg) {
-	case WM_COMMAND:
+		case WM_COMMAND:
 			{
 				int wmId = LOWORD(wparam);
 				// Parse the menu selections:
@@ -92,7 +100,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 			}
 		break;
 
-	case WM_PAINT: // The application receives a WM_PAINT mssg when part of its displayed window must be updated. [lazy message] WM_SIZE comes first
+		case WM_PAINT: // The application receives a WM_PAINT mssg when part of its displayed window must be updated. [lazy message] WM_SIZE comes first
 		{
 			static PAINTSTRUCT ps;
 			static HDC hdc;
@@ -108,36 +116,35 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 		}
 		break;
 
-	case WM_SIZE: // Resize window
-		// Event Not Handled RN
-		_frame_bitmap_info.bmiHeader.biWidth = LOWORD(lparam);
-		_frame_bitmap_info.bmiHeader.biHeight = HIWORD(lparam);
+		case WM_SIZE: { // Resize window
+			_frame_bitmap_info.bmiHeader.biWidth = LOWORD(lparam);
+			_frame_bitmap_info.bmiHeader.biHeight = HIWORD(lparam);
 
-		if (_frame_bitmap) DeleteObject(_frame_bitmap); // if already created, destroy it!
-		_frame_bitmap = CreateDIBSection(NULL, &_frame_bitmap_info, DIB_RGB_COLORS, (void**) & _frame.pixels, 0, 0); // &_frame.pixels -> pixel array pointer
-		SelectObject(_frame_device_context, _frame_bitmap);
+			if (_frame_bitmap) DeleteObject(_frame_bitmap); // if already created, destroy it!
+			_frame_bitmap = CreateDIBSection(NULL, &_frame_bitmap_info, DIB_RGB_COLORS, (void**)&_frame.pixels, 0, 0); // &_frame.pixels -> pixel array pointer
+			SelectObject(_frame_device_context, _frame_bitmap);
 
-		_frame.width = LOWORD(lparam);
-		_frame.height = HIWORD(lparam);
-
+			_frame.width = LOWORD(lparam);
+			_frame.height = HIWORD(lparam);
+		}
 		break;
 
-	case WM_CLOSE: DestroyWindow(hwnd); return 0;
-	// DefWindowProc executes the default action for any window message.
-	// In the case of WM_CLOSE, DefWindowProc automatically calls DestroyWindow.
+		case WM_CLOSE: DestroyWindow(hwnd); return 0;
+		// DefWindowProc executes the default action for any window message.
+		// In the case of WM_CLOSE, DefWindowProc automatically calls DestroyWindow.
 
-	case WM_DESTROY: PostQuitMessage(0); return 0; // when the window is closed. | WM_CREATE is sent when a window is first created. |
+		case WM_DESTROY: PostQuitMessage(0); return 0; // when the window is closed. | WM_CREATE is sent when a window is first created. |
 
-	case WM_CREATE:
+		case WM_CREATE:
 		return 0;
 
-	case WM_MOUSEMOVE:
+		case WM_MOUSEMOVE:
 		return 0;
 
-	case WM_MOVE:
+		case WM_MOVE:
 		return 0;
 
-	default: break;
+		default: break;
 	}
 
 	return DefWindowProc(hwnd, msg, wparam, lparam); // Returns default window procedure
@@ -197,11 +204,12 @@ int create_win32(HINSTANCE hInstance, int nCmdShow, int width, int height) {
 	const wchar_t* caption{ L"NES Emulator" };
 
 	// Create an instance of window class
+	// NOTE: WS_THICKFRAME disables the ability to resize the window
 	window = CreateWindowEx(
 		0,											// Extended Style
 		wc.lpszClassName,							// Window Class Name
 		caption,									// Instance Title
-		WS_OVERLAPPEDWINDOW,						// Window Style
+		WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME,		// Window Style
 		CW_USEDEFAULT, CW_USEDEFAULT,				// Initial Window Left, Top Position
 		width, height,								// Initial Window Width, Height
 		NULL,										// Handle to Parent [HWND]
@@ -218,6 +226,7 @@ int create_win32(HINSTANCE hInstance, int nCmdShow, int width, int height) {
 	return 1;
 }
 
+// Initializes and fills the bitmap frame buffer info struct
 int init_frame() {
 	_frame_bitmap_info.bmiHeader.biSize = sizeof(_frame_bitmap_info.bmiHeader);
 	_frame_bitmap_info.bmiHeader.biPlanes = 1; // No. of colour planes is always 1
@@ -238,16 +247,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
 	hInst = hInstance;
 
-	table.resize(128);
+	_table1.resize(128);
+	_table2.resize(128);
 	for (int i = 0; i < 128; ++i) {
-		table[i].resize(128);
+		_table1[i].resize(128);
+		_table2[i].resize(128);
 	}
 
 	if (!register_win32()) return 0;
 
 	init_frame(); // Initialize bitmap frame
 
-	if (create_win32(hInstance, SW_SHOWNORMAL, SCREEN_WIDTH*RENDER_SCALE_MULTIPLIER, SCREEN_HEIGHT*RENDER_SCALE_MULTIPLIER)) { 
+	if (create_win32(hInstance, SW_SHOWNORMAL, (SCREEN_WIDTH+4)*RENDER_SCALE_MULTIPLIER, SCREEN_HEIGHT*RENDER_SCALE_MULTIPLIER)) { 
 		MSG msg{};
 		bool is_running{ true };
 		
@@ -277,8 +288,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
 			// TODO: Display status of all registers on the window
 
-			// Get Sprites/Tiles for debug purposes
-			table = _nes_instance->get_pattern_table(0, 0);
+			// Get Sprites/Tiles, Palettes for debug purposes
+			_table1 = _nes_instance->get_pattern_table(0, 0);
+			_table2 = _nes_instance->get_pattern_table(1, 0); // is it working properly?
+			_palette = _nes_instance->get_palette();
 
 			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
 
@@ -287,19 +300,73 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			_frame.pixels[(p++) % (_frame.width * _frame.height)] = rand();
 			_frame.pixels[rand() % (_frame.width * _frame.height)] = 0;
 #else
+			// Table 1
 			for (int y = 127; y >= 0; --y) { // Each Scanline
 				for (int x = 0; x < 128; ++x) { // Each Pixel
-					u8 pixel = table[127-y][x];
-					u32 pixel_colour = (_pal_colour_lookup[pixel >> 8][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 8][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 8][pixel & 0x0F].blue;
-					//_frame.pixels[(y * _frame.width) + x] = pixel_colour;
-					//_frame.pixels[(y * _frame.width) + x + 1] = pixel_colour;
+					u8 pixel = _table1[127-y][x];
+					u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
 
-					_frame.pixels[(y * RENDER_SCALE_MULTIPLIER * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)] = pixel_colour;
-					_frame.pixels[(((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)] = pixel_colour;
-					_frame.pixels[(y * RENDER_SCALE_MULTIPLIER * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)+1] = pixel_colour;
-					_frame.pixels[(((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)+1] = pixel_colour;
+					// So that it doesn't overwrite some other memory or worse, crash the program:
+					assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height)); 
+
+					for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
+						for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
+							_frame.pixels[(((y * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER)+w] = pixel_colour;
+						}
+					}
 				}
 			}
+			// Table 2
+			for (int y = 127; y >= 0; --y) { // Each Scanline
+				for (int x = 128; x < 256; ++x) { // Each Pixel
+					u8 pixel = _table2[127 - y][x-128];
+					u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
+
+					// So that it doesn't overwrite some other memory or worse, crash the program:
+					assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height));
+
+					for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
+						for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
+							_frame.pixels[(((y * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + w] = pixel_colour;
+						}
+					}
+				}
+			}
+
+			// Colour Palette
+			u8 offset{ 0 };
+			for (int x{ 0 }; x < 32; ++x) {
+				if (x % 4 == 0) ++offset;
+
+				u8 pixel = _palette[x];
+				u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
+
+				for (int h = 0; h < 3*RENDER_SCALE_MULTIPLIER; ++h) {
+					for (int w = 0; w < 3*RENDER_SCALE_MULTIPLIER; ++w) {
+						_frame.pixels[(((132 * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + (x * 3 * RENDER_SCALE_MULTIPLIER) + w + (offset * RENDER_SCALE_MULTIPLIER * 3)] = pixel_colour;
+					}
+				}
+			}
+
+			// HEX Value
+
+			//++_count;
+			//if (_count == 8) _count = 0;
+			//
+			//print_hex_value(16, 18, 150, 2, 0, 0x00FFFFFF, 0x00000000, 0);
+			//print_status_value(_count, 18, 150, 2, 1, 0x00FFFFFF, 0x00000000, 0);
+			//print_status_value(_count, 18, 154, 2, 1, 0x00FFFFFF, 0x00000000, 0); // 4x pixel size due to multiplier
+			//print_status_value(_count, 18, 150, 2, 2, 0x00FFFF00, 0x00007878, 0);
+
+			// Status Values
+			print_cpu_status();
+
+			print_acuumulator();
+			print_x_register();
+			print_y_register();
+			print_stack_pointer();
+			print_program_counter();
+
 #endif // SCREEN_TEST
 
 			// Render Next Frame
@@ -352,6 +419,115 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 
 	default:
 		return FALSE;
+	}
+}
+
+void print_status_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count, u32 colour, u32 bg_colour, int left) {
+	for (int y{ y_pos }; y < y_pos + 8; ++y) {
+		for (int x{ x_pos }; x < x_pos + 8; ++x) {
+			u8 pixel = _status_value_table[value][y_pos + 7 - y][x - x_pos];
+			u32 pixel_colour = pixel > 0 ? colour : bg_colour;
+
+			for (int h = 0; h < scale; ++h) {
+				for (int w = 0; w < scale; ++w) {
+					_frame.pixels[(((y_pos * RENDER_SCALE_MULTIPLIER) + (y - y_pos) * scale + h) * _frame.width) + (left + ((8 * value_count) * scale)) + (x - x_pos) * scale + w] = pixel_colour;
+				}
+			}
+		}
+	}
+}
+
+void print_hex_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count, u32 colour, u32 bg_colour, int left) {
+	for (int y{ y_pos }; y < y_pos + 8; ++y) {
+		for (int x{ x_pos }; x < x_pos + 8; ++x) {
+			u8 pixel = _hex_table[value][y_pos + 7 - y][x - x_pos];
+			u32 pixel_colour = pixel > 0 ? colour : bg_colour;
+
+			for (int h = 0; h < scale; ++h) {
+				for (int w = 0; w < scale; ++w) {
+					_frame.pixels[(((y_pos * RENDER_SCALE_MULTIPLIER) + (y - y_pos) * scale + h) * _frame.width) + (left + ((8 * value_count) * scale)) + (x - x_pos) * scale + w] = pixel_colour;
+				}
+			}
+		}
+	}
+}
+
+void print_cpu_status() {
+	u8 stats = _nes_instance->get_status_register();
+	u32 flag_value = 0;
+
+	print_hex_value(16, 18, 221, 2, 0, 0x00FFFF00, 0x00007878, 0);
+	
+	for (int i{ 0 }; i < 8; ++i) {
+		flag_value = stats & 0x01;
+		stats >>= 1;
+		flag_value = flag_value ? 0x0000FF00 : 0x00FF0000;
+		print_status_value(i, 18, 221, 2, i+1, 0x00000000, flag_value, 0);
+	}
+}
+
+void print_acuumulator() {
+	u8 stats = _nes_instance->get_accumulator();
+	u32 flag_value = 0;
+
+	print_hex_value(16, 18, 217, 2, 0, 0x00FFFF00, 0x00007878, 0);
+
+	for (int i{ 0 }; i < 2; ++i) {
+		flag_value = stats & 0x0F;
+		stats >>= 4;
+		print_hex_value(flag_value, 18, 217, 2, i + 1, 0x00FFFFFF, 0, 0);
+	}
+}
+
+void print_x_register() {
+	u8 stats = _nes_instance->get_x_register();
+	u32 flag_value = 0;
+
+	print_hex_value(16, 18, 213, 2, 0, 0x00FFFF00, 0x00007878, 0);
+
+	for (int i{ 0 }; i < 2; ++i) {
+		flag_value = stats & 0x0F;
+		stats >>= 4;
+		print_hex_value(flag_value, 18, 213, 2, i + 1, 0x00FFFFFF, 0, 0);
+	}
+}
+
+void print_y_register() {
+	u8 stats = _nes_instance->get_y_register();
+	u32 flag_value = 0;
+
+	print_hex_value(16, 18, 209, 2, 0, 0x00FFFF00, 0x00007878, 0);
+
+	for (int i{ 0 }; i < 2; ++i) {
+		flag_value = stats & 0x0F;
+		stats >>= 4;
+		print_hex_value(flag_value, 18, 209, 2, i + 1, 0x00FFFFFF, 0, 0);
+	}
+}
+
+void print_stack_pointer() {
+	u8 stats = _nes_instance->get_stack_pointer();
+	u32 flag_value = 0;
+
+	print_hex_value(16, 18, 205, 2, 0, 0x00FFFF00, 0x00007878, 0);
+
+	for (int i{ 0 }; i < 2; ++i) {
+		flag_value = stats & 0x0F;
+		stats >>= 4;
+		print_hex_value(flag_value, 18, 205, 2, i + 1, 0x00FFFFFF, 0, 0);
+	}
+}
+
+void print_program_counter() {
+	u16 stats = _nes_instance->get_program_counter();
+	u32 flag_value = 0;
+
+	print_hex_value(16, 18, 201, 2, 0, 0x00FFFF00, 0x00007878, 0);
+
+	for (int i{ 0 }; i < 4; ++i) {
+		flag_value = stats & 0x0F;
+		stats >>= 4;
+		print_hex_value(flag_value, 18, 201, 2, 4 - i, 0x00FFFFFF, 0, 0);
 	}
 }
 
