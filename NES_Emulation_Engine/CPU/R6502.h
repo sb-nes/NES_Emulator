@@ -278,30 +278,42 @@ namespace NES::CPU {
 		// External Signals
 		void clock() { // Per Clock Signal
 			_bus->clock();
+			++_ticks;
 			if (_cycles == 0) {
 				assert(_cycles == 0);
 				++_cycles; // Since, whenever i read, i use one cpu cycle in the read function
 				_opcode = read_memory(_program_counter++);
 
 #if OPCODE_DEBUG
+				std::cout << _ticks << " ";
 				std::cout << "0x" << hexString(_program_counter - 1, 4) << " ";
 				std::cout << "0x" << hexString(_opcode, 2) << " " << _lookup[_opcode >> 4][_opcode & 0x0F].name << " ";
 
 				if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMP) {
 					std::cout << "IMP\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMM || 
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZP0 || 
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPX || 
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPY ||
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::REL) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << "\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABS || 
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABX || 
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABY || 
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IND ||
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZX ||
-						   (this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZY) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << "\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMM) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {IMM}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZP0) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZP0}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPX) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZPX}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPY) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZPY}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::REL) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {REL}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABS) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABS}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABX) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABX}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABY) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABY}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IND) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IND}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZX) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IZX}\n";
+				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZY) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IZY}\n";
 				}
 
 #endif // OPCODE_DEBUG
@@ -427,7 +439,7 @@ namespace NES::CPU {
 		u8		_opcode{ 0x00 };
 		u8		_cycles{ 0 };
 		u8		_data{ 0x00 };
-		u8		_ticks{ 0 };
+		int		_ticks{ 0 };
 
 		u16		_address_abs{ 0x0000 }; // Absolute Address
 		u16		_address_rel{ 0x00 }; // Relative Address
@@ -936,7 +948,6 @@ namespace NES::CPU {
 		// Writes to the Memory on the Address Bus
 		void write_memory(u16 address) {
 			_bus->write(address, _data);
-			clock();
 		}
 
 		// Writes to the Accumulator on the Chip
@@ -953,8 +964,10 @@ namespace NES::CPU {
 
 		// Reads from the Memory on the Address Bus
 		u8 read_memory(u16 address, bool bReadOnly = false) {
+			if (address == 15683) {
+				int x = 0;
+			}
 			u8 data{ _bus->read(address) };
-			clock();
 			return data;
 		}
 

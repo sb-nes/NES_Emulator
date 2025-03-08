@@ -240,7 +240,7 @@ int init_frame() {
 // Subsystem Windows: Entry Point
 int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
-#if _DEBUG
+#if _DEBUG | 1
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); //Google it, dammit
 	attach_console();
 #endif
@@ -290,16 +290,19 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
 			// Get Sprites/Tiles, Palettes for debug purposes
 			_table1 = _nes_instance->get_pattern_table(0, 0);
-			_table2 = _nes_instance->get_pattern_table(1, 0); // is it working properly?
+			_table2 = _nes_instance->get_pattern_table(1, 3); // is it working properly?
 			_palette = _nes_instance->get_palette();
 
 			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
 
 #if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
 			static unsigned int p = 0;
-			_frame.pixels[(p++) % (_frame.width * _frame.height)] = (rand() << 16) | (rand() << 8) | rand();
-			_frame.pixels[((rand() << 16) | (rand() << 8) | rand()) % (_frame.width * _frame.height)] = 0;
+			if ((_frame.width * _frame.height * RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER) >= (SCREEN_WIDTH*SCREEN_HEIGHT*RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER)) { // to fix error on minimize
+				_frame.pixels[(p++) % (_frame.width * _frame.height)] = (rand() << 16) | (rand() << 8) | rand();
+				_frame.pixels[((rand() << 16) | (rand() << 8) | rand()) % (_frame.width * _frame.height)] = 0;
+			}
 #else
+			
 			// Table 1
 			for (int y = 127; y >= 0; --y) { // Each Scanline
 				for (int x = 0; x < 128; ++x) { // Each Pixel
@@ -316,6 +319,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 					}
 				}
 			}
+
 			// Table 2
 			for (int y = 127; y >= 0; --y) { // Each Scanline
 				for (int x = 128; x < 256; ++x) { // Each Pixel
@@ -332,6 +336,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 					}
 				}
 			}
+			
 
 			// Colour Palette
 			u8 offset{ 0 };
@@ -359,6 +364,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			//print_status_value(_count, 18, 150, 2, 2, 0x00FFFF00, 0x00007878, 0);
 
 			// Status Values
+			/*
 			print_cpu_status();
 
 			print_acuumulator();
@@ -366,6 +372,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			print_y_register();
 			print_stack_pointer();
 			print_program_counter();
+			*/
 
 #endif // SCREEN_TEST
 

@@ -33,10 +33,11 @@ namespace NES::PPU { // [Picture Processing Unit]
 
 			case 0x0006: // PPUADDR -> [Picture Processing Unit] Memory Address
 				if (_address_latch == 0) { // store high address
-					_address_abs = (_address_abs & 0x00FF) | (data << 8);
+					_address_inc = (_address_inc & 0x00FF) | ((data & 0x3F) << 8);
 					_address_latch = 1;
 				} else { // store low address
-					_address_abs = (_address_abs & 0xFF00) | data;
+					_address_inc = (_address_inc & 0xFF00) | data;
+					_address_abs = _address_inc;
 					_address_latch = 0;
 				}
 			break; 

@@ -19,7 +19,7 @@ namespace NES::Cartridge {
 	}
 	bool NROM::cpuMapWrite(u16 address, u32& mapped_address) {
 		if (address >= 0x8000 && address <= 0xFFFF) { // Dedicated Address Space For Cartridge Use
-			// ???
+			mapped_address = map_cpu_to_cartridge(address, get_program_banks_count());
 			return true;
 		}
 		return false;
@@ -32,10 +32,13 @@ namespace NES::Cartridge {
 		return false;
 	}
 	bool NROM::ppuMapWrite(u16 address, u32& mapped_address) {
-		//if (address >= 0x0000 && address <= 0x1FFF) { // Pattern Tables
-		//
-		//	return true;
-		//}
+		if (address >= 0x0000 && address <= 0x1FFF) { // Pattern Tables
+			if (get_character_banks_count() == 0) {
+				// Treat as RAM
+				mapped_address = address;
+				return true;
+			}
+		}
 		return false;
 	}
 }

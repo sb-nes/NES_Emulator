@@ -9,7 +9,7 @@ namespace NES::PPU {
 	public:
 
 		PPU_Bus() {
-			//reset();
+			reset();
 		}
 
 		u8 read_palette_colour(u8 palette_index, u8 colour_index) {

@@ -6,7 +6,7 @@
 #define SCREEN_HEIGHT 240
 #define NTSC_SCREEN_HEIGHT 262
 #define PAL_SCREEN_HEIGHT 312
-#define RENDER_SCALE_MULTIPLIER 4
+#define RENDER_SCALE_MULTIPLIER 1
 
 struct NES_Colour {
 	std::string				name{ "Black" };

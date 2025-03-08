@@ -3,6 +3,10 @@
 namespace NES::PPU {
 	namespace {
 		u16 chip_select(u16 address) { // Acts as the discrete logic chip 74LS139 -> the NES combines a relatively small number of pins to produce a chip select signal for each of the individual components.
+			if (address >= 0x3F00) {
+				int x = 0;
+			}
+
 			if ((address & 0x1000)) {
 				if (address & 0x0F00) return 3;
 				else return 2;
