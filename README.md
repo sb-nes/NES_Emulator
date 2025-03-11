@@ -11,6 +11,7 @@
 
 
 ![palette read 1](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu1.gif)
+![palette read 2](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu2.gif)
 
 #### Credit to javidx9 [not a clone of his olc_nes project] for his basic overview explanation of the Nintendo Entertainment System, NesHacker for his in-depth explanations and all the people behind the NesDev Wiki Reference Guide for it's documentations.
 
