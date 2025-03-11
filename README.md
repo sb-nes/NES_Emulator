@@ -9,6 +9,9 @@
 6. Output Window - Testing
 7. Timing - Later...
 
+
+()[https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu%201.gif]
+
 #### Credit to javidx9 [not a clone of his olc_nes project] for his basic overview explanation of the Nintendo Entertainment System, NesHacker for his in-depth explanations and all the people behind the NesDev Wiki Reference Guide for it's documentations.
 
 ##### Copyright of the Hardware belongs to Nintendo, 1985.
