@@ -10,7 +10,7 @@
 7. Timing - Later...
 
 
-![ReadingPalette](./images/emu1.gif)
+![til](./images/img1.gif)
 
 #### Credit to javidx9 [not a clone of his olc_nes project] for his basic overview explanation of the Nintendo Entertainment System, NesHacker for his in-depth explanations and all the people behind the NesDev Wiki Reference Guide for it's documentations.
 
