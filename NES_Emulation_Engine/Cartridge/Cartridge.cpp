@@ -85,6 +85,7 @@ namespace NES::Cartridge {
 
 	// for .NES files [iNES format]
 	std::shared_ptr<NES::Cartridge::GameCard> load_file(std::string file) {
+		bool result{ false };
 		assert(std::filesystem::exists(file));
 
 		std::shared_ptr<NES::Cartridge::GameCard> card = std::make_shared<NES::Cartridge::GameCard>();
@@ -94,7 +95,8 @@ namespace NES::Cartridge {
 			if (reader.is_open()) {
 
 				reader.read((char*)&name, sizeof(name));
-				assert(check_ines_format(name));
+				result = check_ines_format(name);
+				assert(result);
 
 				reader.read((char*)&header, sizeof(iNES_Header));
 

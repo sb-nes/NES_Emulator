@@ -29,11 +29,6 @@ namespace NES::PPU { // Picture Processing Unit
 		// Reads from the Address Bus
 		u8 cpubus_read(u16 address, bool bReadOnly = false);
 
-		// Writes to the PPU's Address Bus
-		void write(u16 address, u8 data);
-		// Reads from the PPU's Address Bus
-		u8 read(u16 address, bool bReadOnly = false);
-
 		[[nodiscard]] sprite_tile get_tile_at_address(u16 address, u8 palette_idx);
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx);
 		[[nodiscard]] palette get_palette();
@@ -112,6 +107,11 @@ namespace NES::PPU { // Picture Processing Unit
 
 			u8 value;
 		} _status_register;
+		
+		// Writes to the PPU's Address Bus
+		void write(u16 address, u8 data);
+		// Reads from the PPU's Address Bus
+		u8 read(u16 address, bool bReadOnly = false);
 
 	};
 }

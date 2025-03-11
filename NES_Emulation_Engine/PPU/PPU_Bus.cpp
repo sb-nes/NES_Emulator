@@ -27,9 +27,11 @@ namespace NES::PPU {
 
 	// Writes Data to the Address Location on the Bus
 	void PPU_Bus::write(u16 address, u8 data) {
+		bool result{ false };
 		switch (chip_select(address)) {
 		case 0: // $0000-1FFF -> Cartridge CHR-ROM/RAM -> Pattern Table
-			assert(_card->ppu_read(address, _data)); // should never fail
+			_card->ppu_read(address, _data);
+			assert(result); // should never fail
 
 		case 1:
 			//_vRAM[]
@@ -47,9 +49,11 @@ namespace NES::PPU {
 
 	// Reads Data from the Address Location on the Bus
 	[[nodiscard]] u8 PPU_Bus::read(u16 address, bool bReadOnly) {
+		bool result{ false };
 		switch (chip_select(address)) {
 			case 0: // $0000-1FFF -> Cartridge CHR-ROM/RAM -> Pattern Table
-			assert(_card->ppu_read(address, _data)); // should never fail
+			result = _card->ppu_read(address, _data);
+			assert(result); // should never fail
 			return _data;
 
 			case 1: // $2000-2FFF -> Nametable memory

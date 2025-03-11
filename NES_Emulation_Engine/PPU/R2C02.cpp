@@ -142,8 +142,8 @@ namespace NES::PPU { // [Picture Processing Unit]
 				u16 address = (0x1000 * pattern_table_idx) + offset;
 
 				for (u8 r = 0; r < 8; ++r) {
-					u8 tile_lsb = read(address + r); // Least Significant Bit of the Tile
-					u8 tile_msb = read(address + 8 + r); // Most Significant Bit of the Tile
+					u8 tile_lsb = R2C02::read(address + r); // Least Significant Bit of the Tile
+					u8 tile_msb = R2C02::read(address + 8 + r); // Most Significant Bit of the Tile
 					for (u8 c = 0; c < 8; ++c) {
 						u8 pixel_value = (tile_lsb & 0x01) + ((tile_msb & 0x01) << 1);
 						// shift bit to the right

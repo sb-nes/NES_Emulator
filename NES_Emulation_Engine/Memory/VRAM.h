@@ -7,11 +7,11 @@
 // $0000 - $00FF: The zero page, which can be accessed with fewer bytes and cycles than other addresses.
 // $0100–$01FF : The page containing the stack, which can be located anywhere here, but typically starts at $01FF and grows downward.
 
-/*
+
 namespace NES::Memory {
 	namespace {
 
-		u16 get_address(u16 m_address) { // if the address points to a mirror of the ram, bitwise modulo gets the address. -> |x % 2^n| = x & (2^n -1) -> Only works for powers of 2
+		u16 get_vram_address(u16 m_address) { // if the address points to a mirror of the ram, bitwise modulo gets the address. -> |x % 2^n| = x & (2^n -1) -> Only works for powers of 2
 			return m_address & 0x07FF; // Size of RAM is 2048 bytes | 2KB
 		}
 
@@ -32,14 +32,14 @@ namespace NES::Memory {
 		}
 
 		u8 read(u16 address, bool bReadOnly = false) {
-			return _vram[get_address(address)];
+			return _vram[get_vram_address(address)];
 		}
 
 		void write(u16 address, u8 data) {
 			assert(address >= 0x0000 && address <= 0x1FFF); // RAM and it's mirrors
 			assert(data >= 0x00 && data <= 0xFF); // Is this check necessary?
 
-			_vram[get_address(address)] = data;
+			_vram[get_vram_address(address)] = data;
 		}
 
 		void disassemble_vram();
@@ -52,4 +52,3 @@ namespace NES::Memory {
 		u8* const _vram_heap = new u8[2048];
 	};
 }
-*/
