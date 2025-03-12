@@ -18,7 +18,7 @@ pattern_table			_table2;
 palette					_palette;
 int						_count{ 0 };
 
-#if _WIN64
+#if _WIN64 & WINDOWS_GDI
 
 #include <Windows.h>
 
@@ -337,7 +337,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 				}
 			}
 			
-
 			// Colour Palette
 			u8 offset{ 0 };
 			for (int x{ 0 }; x < 32; ++x) {
@@ -591,6 +590,55 @@ bool initialize() {
 	return true;
 }
 
+#elif GLFW
+// Use Subsystem CONSOLE instead of WINDOWS
+
+#include <GLFW/glfw3.h>
+
+int main(void)
+{
+	
+	GLFWwindow* window;
+
+	// Initialize the library 
+	if (!glfwInit())
+		return -1;
+
+	// Create a windowed mode window and its OpenGL context 
+	window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+	if (!window)
+	{
+		glfwTerminate();
+		return -1;
+	}
+
+	// Make the window's context current 
+	glfwMakeContextCurrent(window);
+
+	// Loop until the user closes the window
+	while (!glfwWindowShouldClose(window))
+	{
+		// Render here 
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glBegin(GL_TRIANGLES);
+
+		glVertex2f(-0.5f, -0.5f);
+		glVertex2f(0.0f, 0.5f);
+		glVertex2f(0.5f, -0.5f);
+
+		glEnd();
+
+		// Swap front and back buffers 
+		glfwSwapBuffers(window);
+
+		// Poll for and process events 
+		glfwPollEvents();
+	}
+
+	glfwTerminate();
+	return 0;
+}
 #else
 
 int main()

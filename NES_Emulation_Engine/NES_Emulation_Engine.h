@@ -8,6 +8,9 @@
 #define PAL_SCREEN_HEIGHT 312
 #define RENDER_SCALE_MULTIPLIER 1
 
+#define WINDOWS_GDI 0
+#define GLFW 1
+
 struct NES_Colour {
 	std::string				name{ "Black" };
 	u8						red{ 0 };

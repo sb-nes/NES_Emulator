@@ -33,4 +33,7 @@
   <ItemGroup>
     <ResourceCompile Include="Resources\NES_Emulation.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>
