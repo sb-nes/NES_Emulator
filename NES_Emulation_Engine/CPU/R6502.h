@@ -2,10 +2,9 @@
 
 #include "../Common/CommonHeaders.h"
 #include "Bus.h"
-
-#if OPCODE_DEBUG
 #include <iostream>
 
+#if OPCODE_DEBUG
 namespace {
 
 	const char hexChar[] = "0123456789ABCDEF";
@@ -276,64 +275,6 @@ namespace NES::CPU {
 		~R6502() { delete _bus; }
 
 		// External Signals
-		void clock() { // Per Clock Signal
-			_bus->clock();
-			++_ticks;
-			if (_cycles == 0) {
-				assert(_cycles == 0);
-				++_cycles; // Since, whenever i read, i use one cpu cycle in the read function
-				_opcode = read_memory(_program_counter++);
-
-#if OPCODE_DEBUG
-				std::cout << _ticks << " ";
-				std::cout << "0x" << hexString(_program_counter - 1, 4) << " ";
-				std::cout << "0x" << hexString(_opcode, 2) << " " << _lookup[_opcode >> 4][_opcode & 0x0F].name << " ";
-
-				if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMP) {
-					std::cout << "IMP\n";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMM) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {IMM}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZP0) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZP0}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPX) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZPX}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPY) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZPY}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::REL) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {REL}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABS) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABS}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABX) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABX}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABY) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABY}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IND) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IND}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZX) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IZX}\n";
-				} else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZY) {
-					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IZY}\n";
-				}
-
-#endif // OPCODE_DEBUG
-				
-				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
-				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
-				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
-
-				(this->*delay_change)();
-				(this->*delay_assign)(); // fbrereto -> https://stackoverflow.com/questions/2898316/using-a-member-function-pointer-within-a-class
-
-#if CPU_TEST
-				--_instructions_count;
-#endif // CPU_TEST
-
-			} else {
-			// wait for set time
-			--_cycles;
-			}
-		}
 
 		// Reset, IRQ and NMI use CPU vectors, provided by the cartridge at the end of the unmapped space.
 		// The MOS 6502 and by extension the 2A03/2A07 has a quirk that can cause an interrupt to use the wrong vector if two different interrupts occur very close to one another.
@@ -359,6 +300,8 @@ namespace NES::CPU {
 
 			_ticks = 0;
 			_bus->reset();
+
+			//interrupt();
 
 #if CPU_TEST
 			_cycles = 0;
@@ -392,6 +335,79 @@ namespace NES::CPU {
 			interrupt();
 
 			_cycles = 8; // These take time...
+		}
+
+		void clock() { // Per Clock Signal
+			if (_bus->clock()) {
+				nmi();// NMI Interrupt
+			}
+			++_ticks;
+			if (_cycles == 0) {
+				assert(_cycles == 0);
+				++_cycles; // Since, whenever i read, i use one cpu cycle in the read function
+				_opcode = read_memory(_program_counter++);
+				std::cout << _ticks << " ";
+
+#if OPCODE_DEBUG
+				std::cout << "0x" << hexString(_program_counter - 1, 4) << " ";
+				std::cout << "0x" << hexString(_opcode, 2) << " " << _lookup[_opcode >> 4][_opcode & 0x0F].name << " ";
+
+				if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMP) {
+					std::cout << "IMP\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMM) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {IMM}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZP0) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZP0}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPX) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZPX}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPY) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {ZPY}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::REL) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter), 2) << " {REL}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABS) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABS}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABX) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABX}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABY) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {ABY}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IND) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IND}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZX) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IZX}\n";
+				}
+				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZY) {
+					std::cout << "0x" << hexString(read_test_memory(_program_counter + 1), 2) << hexString(read_test_memory(_program_counter), 2) << " {IZY}\n";
+				}
+#else
+				std::cout << "\n";
+#endif // OPCODE_DEBUG
+
+				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
+				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
+				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
+
+				(this->*delay_change)();
+				(this->*delay_assign)(); // fbrereto -> https://stackoverflow.com/questions/2898316/using-a-member-function-pointer-within-a-class
+
+#if CPU_TEST
+				--_instructions_count;
+#endif // CPU_TEST
+
+			}
+			else {
+				// wait for set time
+				--_cycles;
+			}
 		}
 		/// END INTERRUPTS ///
 
@@ -964,9 +980,6 @@ namespace NES::CPU {
 
 		// Reads from the Memory on the Address Bus
 		u8 read_memory(u16 address, bool bReadOnly = false) {
-			if (address == 15683) {
-				int x = 0;
-			}
 			u8 data{ _bus->read(address) };
 			return data;
 		}
@@ -999,6 +1012,7 @@ namespace NES::CPU {
 			u16 l_address = read_memory(_address_abs + 0);
 			u16 h_address = read_memory(_address_abs + 1);
 
+			// TODO: fix reading the address for handler
 			_program_counter = (h_address << 8) | l_address;
 		}
 

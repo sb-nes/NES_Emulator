@@ -12,11 +12,49 @@
 
 using namespace NES;
 
+// Platform Independant Code
+
 CPU::R6502*				_nes_instance;
 pattern_table			_table1;
 pattern_table			_table2;
 palette					_palette;
 int						_count{ 0 };
+
+bool createNES() {
+	std::cout << "\nCreating NES Hardware Instance!" << std::endl;
+	try {
+		_nes_instance = new CPU::R6502();
+
+		_nes_instance->SetBus(new CPU::Bus());
+		_nes_instance->reset();
+
+#if CPU_TEST
+		_nes_instance->set_instructions_count(88);
+
+		for (; _nes_instance->get_instructions_count() > 0; ) {
+			_nes_instance->clock();
+		}
+		_nes_instance->DisassembleRAM(0, 40);
+#else
+
+#endif // CPU_TEST
+	}
+	catch (const std::exception&) {
+		delete _nes_instance;
+		std::cout << "Failed...\n\n";
+		return false;
+	}
+
+	std::cout << "Initialized H/W...\n\n";
+	return true;
+}
+
+void destroyNES() {
+	delete _nes_instance;
+	std::cout << "NES Instance Terminated!\n\n";
+}
+
+// Platform Dependant Code
 
 #if _WIN64 & WINDOWS_GDI
 
@@ -80,6 +118,7 @@ INT_PTR CALLBACK about_proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
 	switch (msg) {
+
 		case WM_COMMAND:
 			{
 				int wmId = LOWORD(wparam);
@@ -96,6 +135,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 					break;
 				default:
 					return DefWindowProc(hwnd, msg, wparam, lparam);
+					break;
 				}
 			}
 		break;
@@ -266,11 +306,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 		// HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TEST));
 		// if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
 
-#if CPU_TEST
-		test(); // CPU/PPU TEST
-#endif // CPU_TEST
-
-		if (!initialize()) return 0;
+		if (!createNES()) return 0;
 
 		while (is_running) {
 			// Engine's update function
@@ -289,7 +325,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			// TODO: Display status of all registers on the window
 
 			// Get Sprites/Tiles, Palettes for debug purposes
-			_table1 = _nes_instance->get_pattern_table(0, 0);
+			_table1 = _nes_instance->get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
 			_table2 = _nes_instance->get_pattern_table(1, 3); // is it working properly?
 			_palette = _nes_instance->get_palette();
 
@@ -310,7 +346,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 					u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
 
 					// So that it doesn't overwrite some other memory or worse, crash the program:
-					assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height)); 
+					//assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height)); 
 
 					for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
 						for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
@@ -327,7 +363,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 					u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
 
 					// So that it doesn't overwrite some other memory or worse, crash the program:
-					assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height));
+					//assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height));
 
 					for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
 						for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
@@ -363,7 +399,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			//print_status_value(_count, 18, 150, 2, 2, 0x00FFFF00, 0x00007878, 0);
 
 			// Status Values
-			/*
+			
 			print_cpu_status();
 
 			print_acuumulator();
@@ -371,7 +407,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			print_y_register();
 			print_stack_pointer();
 			print_program_counter();
-			*/
+			
 
 #endif // SCREEN_TEST
 
@@ -383,7 +419,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			
 			// TODO: set the timing circuit code for the cpu/ppu clock
 		}
-		delete _nes_instance;
+		destroyNES();
 	}
 
 	return 1;
@@ -462,13 +498,13 @@ void print_cpu_status() {
 	u8 stats = _nes_instance->get_status_register();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 221, 2, 0, 0x00FFFF00, 0x00007878, 0);
+	print_hex_value(16, 18, 170, 1, 0, 0x00FFFF00, 0x00007878, 0);
 	
 	for (int i{ 0 }; i < 8; ++i) {
 		flag_value = stats & 0x01;
 		stats >>= 1;
 		flag_value = flag_value ? 0x0000FF00 : 0x00FF0000;
-		print_status_value(i, 18, 221, 2, 8-i, 0x00000000, flag_value, 0);
+		print_status_value(i, 18, 170, 1, 8-i, 0x00000000, flag_value, 0);
 	}
 }
 
@@ -476,12 +512,12 @@ void print_acuumulator() {
 	u8 stats = _nes_instance->get_accumulator();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 217, 2, 0, 0x00FFFF00, 0x00007878, 0);
+	print_hex_value(16, 18, 162, 1, 0, 0x00FFFF00, 0x00007878, 0);
 
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 217, 2, 2-i, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 162, 1, 2-i, 0x00FFFFFF, 0, 0);
 	}
 }
 
@@ -489,12 +525,12 @@ void print_x_register() {
 	u8 stats = _nes_instance->get_x_register();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 213, 2, 0, 0x00FFFF00, 0x00007878, 0);
+	print_hex_value(16, 18, 156, 1, 0, 0x00FFFF00, 0x00007878, 0);
 
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 213, 2, 2-i, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 156, 1, 2-i, 0x00FFFFFF, 0, 0);
 	}
 }
 
@@ -502,12 +538,12 @@ void print_y_register() {
 	u8 stats = _nes_instance->get_y_register();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 209, 2, 0, 0x00FFFF00, 0x00007878, 0);
+	print_hex_value(16, 18, 148, 1, 0, 0x00FFFF00, 0x00007878, 0);
 
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 209, 2, 2-i, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 148, 1, 2-i, 0x00FFFFFF, 0, 0);
 	}
 }
 
@@ -515,12 +551,12 @@ void print_stack_pointer() {
 	u8 stats = _nes_instance->get_stack_pointer();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 205, 2, 0, 0x00FFFF00, 0x00007878, 0);
+	print_hex_value(16, 18, 140, 1, 0, 0x00FFFF00, 0x00007878, 0);
 
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 205, 2, 2 - i, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 140, 1, 2 - i, 0x00FFFFFF, 0, 0);
 	}
 }
 
@@ -528,12 +564,12 @@ void print_program_counter() {
 	u16 stats = _nes_instance->get_program_counter();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 201, 2, 0, 0x00FFFF00, 0x00007878, 0);
+	print_hex_value(16, 18, 132, 1, 0, 0x00FFFF00, 0x00007878, 0);
 
 	for (int i{ 0 }; i < 4; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 201, 2, 4 - i, 0x00FFFFFF, 0, 0);
+		print_hex_value(flag_value, 18, 132, 1, 4 - i, 0x00FFFFFF, 0, 0);
 	}
 }
 
@@ -553,61 +589,113 @@ void attach_console() {
 	SetConsoleCtrlHandler(CtrlHandler, TRUE);
 }
 
-void test() {
-	std::cout << "Test Initialize!\n";
-
-	CPU::R6502* Cpu = new CPU::R6502();
-
-	Cpu->SetBus(new CPU::Bus());
-	Cpu->reset();
-
-#if CPU_TEST
-	Cpu->set_instructions_count(88);
-
-	for (; Cpu->get_instructions_count() > 0;) {
-		Cpu->clock();
-	}
-	Cpu->DisassembleRAM(0, 40);
-#else
-
-#endif // CPU_TEST
-
-	delete Cpu;
-
-	std::cout << "Finished...\n\n";
-	//getchar();
-}
-
-bool initialize() {
-	std::cout << "Initializing!\n";
-
-	_nes_instance = new CPU::R6502();
-
-	_nes_instance->SetBus(new CPU::Bus());
-	_nes_instance->reset();
-
-	std::cout << "Ready...\n\n";
-	return true;
-}
-
 #elif GLFW
 // Use Subsystem CONSOLE instead of WINDOWS
 
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-int main(void)
-{
+#include <fstream>
+#include <string>
+#include <sstream>
+
+struct ShaderProgramSource {
+	std::string VertexSource;
+	std::string FragmentSource;
+};
+
+static ShaderProgramSource parseShader(const std::string& filepath) {
+	std::ifstream stream(filepath);
+
+	enum class ShaderType {
+		NONE = -1,
+		VERTEX = 0, 
+		FRAGMENT = 1,
+	};
+
+	std::stringstream ss[2];
+	ShaderType type = ShaderType::NONE;
+	std::string line;
+	while (getline(stream, line)) {
+		if (line.find("#shader") != std::string::npos) {
+			if (line.find("vertex") != std::string::npos) {
+				type = ShaderType::VERTEX;
+
+			} else if (line.find("fragment") != std::string::npos) {
+				type = ShaderType::FRAGMENT;
+
+			}
+		} else {
+			ss[(int)type] << line << '\n';
+		}
+	}
+
+	return { ss[0].str(), ss[1].str() };
+}
+
+static unsigned int compileShader(unsigned int type, const std::string& source) {
+	unsigned int id = glCreateShader(type);
+	const char* src = source.c_str();
+	glShaderSource(id, 1, &src, nullptr);
+	glCompileShader(id);
+
+	// HANDLE ERRORS if compilation failed
+	int result;
+	glGetShaderiv(id, GL_COMPILE_STATUS, &result); // i -> integer, v -> vector
+
+	if (result == GL_FALSE) {
+		int length;
+		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
+
+		// char message[length] -> error -> doesn't let you dynamically create an array on the stack
+		char* message = (char*)alloca(length * sizeof(char)); // alloca() is one way that lets you overcome it.
+
+		glGetShaderInfoLog(id, length, &length, message);
+		std::cout << "Failed to Compile " <<
+			(type == GL_VERTEX_SHADER ? "Vertex" : "Fragment")
+			<< " Shader!" << std::endl;
+		std::cout << message << std::endl;
+		
+		glDeleteShader(id);
+		return 0;
+	}
+
+	return id;
+}
+
+static unsigned int createShader(const std::string& vertexShader, const std::string& fragmentShader) {
+	unsigned int program = glCreateProgram();
+	unsigned int vs = compileShader(GL_VERTEX_SHADER, vertexShader);
+	unsigned int fs = compileShader(GL_FRAGMENT_SHADER, fragmentShader);
+
+	glAttachShader(program, vs);
+	glAttachShader(program, fs);
+
+	glLinkProgram(program);
+	glValidateProgram(program);
+
+	// Should i call detach shader? it might be helpful to keep the source code of the shader alive for debug purposes
+	glDeleteShader(vs);
+	glDeleteShader(fs);
+
+	return program;
+}
+
+// Subsystem Console: Entry Point
+int main(void) {
+
+#if _DEBUG
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); //Google it, dammit
+#endif
 	
 	GLFWwindow* window;
 
 	// Initialize the library 
-	if (!glfwInit())
-		return -1;
+	if (!glfwInit()) return -1;
 
 	// Create a windowed mode window and its OpenGL context 
-	window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-	if (!window)
-	{
+	window = glfwCreateWindow(640, 480, "NES Emulator", NULL, NULL);
+	if (!window) {
 		glfwTerminate();
 		return -1;
 	}
@@ -615,19 +703,61 @@ int main(void)
 	// Make the window's context current 
 	glfwMakeContextCurrent(window);
 
+	if (glewInit() != GLEW_OK) { // Error handler
+		std::cout << "Failed to Initialize GLEW" << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+
+	std::cout << "OpenGl " << glGetString(GL_VERSION) << std::endl;
+
+	float positions[6] = { // array of contiguous memory -> therefore, it's also a buffer 
+		-0.5f, -0.5f,
+		 0.0f,  0.5f,
+		 0.5f, -0.5f
+	};
+
+	unsigned int buffer_id; // id for the buffer [object in general]
+	glGenBuffers(1, &buffer_id); // create a buffer
+	glBindBuffer(GL_ARRAY_BUFFER, buffer_id); // select the buffer
+	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0); // NOTE: Remember to enable the index of the array to use it, otherwise nothing will be displayed.
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, (const void*)0);
+
+	ShaderProgramSource source = parseShader("Resources/Shaders/basic.shader");
+
+	std::cout << "Vertex:" << std::endl;
+	std::cout << source.VertexSource << std::endl;
+	std::cout << "Fragment:" << std::endl;
+	std::cout << source.FragmentSource << std::endl;
+
+	unsigned int shader = createShader(source.VertexSource, source.FragmentSource);
+	glUseProgram(shader);
+
+	createNES();
+
 	// Loop until the user closes the window
-	while (!glfwWindowShouldClose(window))
-	{
+	while (!glfwWindowShouldClose(window)) {
+
+		_nes_instance->clock();
+
 		// Render here 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glBegin(GL_TRIANGLES);
+		glDrawArrays(GL_TRIANGLES, 0, 3); // if we don't have index buffers
+		//glDrawElements(); // used with an index buffer
 
+		/* Drawn using Legacy OpenGL for immediate tests
+
+		glBegin(GL_TRIANGLES);
+		
 		glVertex2f(-0.5f, -0.5f);
 		glVertex2f(0.0f, 0.5f);
 		glVertex2f(0.5f, -0.5f);
-
+		
 		glEnd();
+		*/
 
 		// Swap front and back buffers 
 		glfwSwapBuffers(window);
@@ -636,9 +766,13 @@ int main(void)
 		glfwPollEvents();
 	}
 
+	glDeleteProgram(shader);
+
 	glfwTerminate();
+	destroyNES();
 	return 0;
 }
+
 #else
 
 int main()

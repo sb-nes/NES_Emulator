@@ -18,7 +18,7 @@ namespace NES::Cartridge {
 		return false;
 	}
 	bool NROM::cpuMapWrite(u16 address, u32& mapped_address) {
-		if (address >= 0x8000 && address <= 0xFFFF) { // Dedicated Address Space For Cartridge Use
+		if (address >= 0x6000 && address <= 0x7FFF) { // Dedicated Address Space For Cartridge Use
 			mapped_address = map_cpu_to_cartridge(address, get_program_banks_count());
 			return true;
 		}

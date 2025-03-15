@@ -60,7 +60,16 @@ namespace NES::CPU {
 		void disassembleRAM(u32 start, u32 end) { // Disassembler - [Start, End)
 			_ram->disassemble_wram(start, end); 
 		}
-		void clock() { for (int i{ 0 }; i < 3; ++i) _ppu->clock(); }
+		bool clock() { 
+			for (int i{ 0 }; i < 3; ++i) {
+				_ppu->clock();
+				if (_ppu->_nmi_trigger) {
+					_ppu->_nmi_trigger = false;
+					return true;
+				}
+			}
+			return false;
+		}
 
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
 			return _ppu->get_pattern_table(pattern_table_idx, palette_idx);
@@ -75,8 +84,6 @@ namespace NES::CPU {
 		[[nodiscard]]u8 read(u16 address, bool bReadOnly = false);
 
 	private:
-
-		// R6502 _cpu;
 		// Instance or whatever data is needed by CPU/PPU from the cartridge
 		bool										_cartridge_inserted{ false };
 		std::shared_ptr<NES::Cartridge::GameCard>	_cartridge;

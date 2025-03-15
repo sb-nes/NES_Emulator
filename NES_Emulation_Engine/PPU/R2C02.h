@@ -14,6 +14,8 @@
 namespace NES::PPU { // Picture Processing Unit
 	class R2C02 {
 	public:
+		bool		_nmi_trigger{ false };
+
 		R2C02() { 
 			_bus = new PPU_Bus();
 		}
@@ -35,6 +37,16 @@ namespace NES::PPU { // Picture Processing Unit
 
 		void clock() {
 			// Clock function of the PPU
+
+			if (_scanline == -1 && _cycle == 1) {
+				_status_register.v_blank = 0;
+			}
+				
+			if (_scanline >= 241 && _cycle == 1) {
+				_status_register.v_blank = 1;
+				if (_ctrl_register.nmi_enable) _nmi_trigger = true;
+			}
+
 			++_cycle; // Works like a scanline across the screen of the CRT
 			if (_cycle >= 341) { // HIT CRT EDGE
 				_cycle = 0;

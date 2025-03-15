@@ -62,7 +62,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 
 			case 0x0002: // PPUSTATUS -> Status
 #if PPU_TEST
-				_status_register.v_blank = 1; // for testing purposes
+				_status_register.v_blank = 1; // for testing purposes | OLC's method
 #endif // PPU_TEST
 
 				data = (_status_register.value & 0xE0) | (_ppu_read_buffer & 0x1F);
@@ -139,7 +139,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 		for (u16 i = 0; i < 16; ++i) { // Y
 			for (u16 j = 0; j < 16; ++j) { // X
 				u16 offset = (i * 256) + (j * 16);
-				u16 address = (0x1000 * pattern_table_idx) + offset;
+				u16 address = 0x1000 * pattern_table_idx + offset;
 
 				for (u8 r = 0; r < 8; ++r) {
 					u8 tile_lsb = R2C02::read(address + r); // Least Significant Bit of the Tile

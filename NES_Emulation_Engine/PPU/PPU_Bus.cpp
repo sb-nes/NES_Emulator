@@ -3,15 +3,14 @@
 namespace NES::PPU {
 	namespace {
 		u16 chip_select(u16 address) { // Acts as the discrete logic chip 74LS139 -> the NES combines a relatively small number of pins to produce a chip select signal for each of the individual components.
-			if (address >= 0x3F00) {
-				int x = 0;
-			}
-
-			if ((address & 0x1000)) {
-				if (address & 0x0F00) return 3;
-				else return 2;
+			if ((address & 0x2000)) {
+				if (!(address & 0x1000)) return 1;
+				else if (address & 0x0F00)
+					return 3;
+				else
+					return 2;
 			} else {
-				return address & 0x2000;
+				return 0;
 			}
 		}
 
@@ -30,7 +29,7 @@ namespace NES::PPU {
 		bool result{ false };
 		switch (chip_select(address)) {
 		case 0: // $0000-1FFF -> Cartridge CHR-ROM/RAM -> Pattern Table
-			_card->ppu_read(address, _data);
+			result = _card->ppu_read(address, _data);
 			assert(result); // should never fail
 
 		case 1:
