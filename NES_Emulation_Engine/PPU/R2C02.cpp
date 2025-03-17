@@ -82,8 +82,9 @@ namespace NES::PPU { // [Picture Processing Unit]
 				data = _ppu_read_buffer; // PPU bus reads are too slow and cannot complete in time to service the CPU read. Thus, it has an internal buffer for storing data to be delivered later.
 				_ppu_read_buffer = read(_address_abs);
 
-				if (_address_abs > 0x3F00) data = _ppu_read_buffer;
-				++_address_abs;
+				if (_address_abs >= 0x3F00) data = _ppu_read_buffer;
+				//++_address_abs;
+				_address_abs += _ctrl_register.increment_mode ? 32 : 1;
 			break;
 
 			default:
@@ -98,14 +99,14 @@ namespace NES::PPU { // [Picture Processing Unit]
 	// Writes to the PPU's Address Bus
 	void R2C02::write(u16 address, u8 data) {
 		address = get_address(address);
-		_bus->write(address, data);
+		_bus.write(address, data);
 	}
 
 	// Reads from the PPU's Address Bus
 	u8 R2C02::read(u16 address, bool bReadOnly) {
 		u8 data = 0x00;
 		address = get_address(address);
-		return _bus->read(address);
+		return _bus.read(address);
 	}
 
 	sprite_tile R2C02::get_tile_at_address(u16 address, u8 palette_idx) {
@@ -121,7 +122,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 					tile_msb >>= 1;
 
 					// get colour and store it
-					tile[i][7-j] = _bus->read_palette_colour(palette_idx, pixel_value);
+					tile[i][7-j] = _bus.read_palette_colour(palette_idx, pixel_value);
 				}
 		}
 
@@ -151,7 +152,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 						tile_msb >>= 1;
 
 						// get colour and store it
-						table[(i * 8) + r][(j * 8) + 7 - c] = _bus->read_palette_colour(palette_idx, pixel_value);
+						table[(i * 8) + r][(j * 8) + 7 - c] = _bus.read_palette_colour(palette_idx, pixel_value);
 					}
 				}
 			}
@@ -161,7 +162,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 	}
 
 	palette R2C02::get_palette() {
-		return _bus->get_palette_data();
+		return _bus.get_palette_data();
 	}
 
 }

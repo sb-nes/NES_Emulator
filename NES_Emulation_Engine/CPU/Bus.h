@@ -14,17 +14,14 @@ namespace NES::CPU {
 			_cartridge = Cartridge::load_file("C:/Users/shrey/source/repos/NES_Emulator/x64/Debug/test.nes");
 			_cartridge_inserted = true;
 
-			_ppu = new NES::PPU::R2C02();
-
-			_ppu->connect_card(_cartridge);
+			_ppu.connect_card(_cartridge);
 		}
 
-		~Bus() { // Delete Pointers
-			delete _ppu;
-		}
+		~Bus() { /* Delete Pointers */ }
 
 		void reset() {
 			_ram.reset();
+			_ppu.reset();
 
 #if RAM_TEST
 			_ram->write(0x0000, 0x76);
@@ -54,7 +51,6 @@ namespace NES::CPU {
 
 		void set_cartridge_inserted(bool value) { _cartridge_inserted = value; }
 
-
 		void disassembleRAM() { _ram.disassemble_wram(); }
 		void disassembleRAM(u32 start, u32 end) { // Disassembler - [Start, End)
 			_ram.disassemble_wram(start, end); 
@@ -62,29 +58,27 @@ namespace NES::CPU {
 
 		bool clock() { 
 			for (int i{ 0 }; i < 3; ++i) {
-				_ppu->clock();
-				if (_ppu->_nmi_trigger) {
-					_ppu->_nmi_trigger = false;
+				_ppu.clock();
+				if (_ppu._nmi_trigger) {
+					_ppu._nmi_trigger = false;
 					return true;
 				}
 			}
 			return false;
 		}
 
-		void get_ppu(PPU::R2C02*& ppu) {
+		void get_ppu(PPU::R2C02& ppu) {
 			ppu = _ppu;
 		}
 
 		u8* get_nametable() {
-			return _ppu->get_nametable();
+			return _ppu.get_nametable();
 		}
 
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
-			return _ppu->get_pattern_table(pattern_table_idx, palette_idx);
+			return _ppu.get_pattern_table(pattern_table_idx, palette_idx);
 		}
-		[[nodiscard]] palette get_palette() {
-			return _ppu->get_palette();
-		}
+		[[nodiscard]] palette get_palette() { return _ppu.get_palette(); }
 
 		// Writes Data to the Address Location on the Bus
 		void write(u16 address, u8 data);
@@ -97,9 +91,15 @@ namespace NES::CPU {
 		std::shared_ptr<NES::Cartridge::GameCard>	_cartridge;
 
 		// I/O Hardware
-		NES::PPU::R2C02*							_ppu;
+		NES::PPU::R2C02								_ppu{};
 		NES::Memory::RAM							_ram{};
 
+		// 2KB of RAM
+		u8											_cpuRam[2048];
+		// Controllers
+		u8											_controller[2];
+		// Internal cache of controller state
+		u8											_controller_state[2];
 	};
 
 } // NES CPU

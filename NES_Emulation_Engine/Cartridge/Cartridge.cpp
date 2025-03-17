@@ -65,6 +65,7 @@ namespace NES::Cartridge {
 
 	// Writes Data to the Address Location on the Bus
 	bool GameCard::ppu_write(u16 address, u8 data) {
+		assert(address < 0x2000);
 		u32 mapped_address{ 0 };
 		if (_mapper->ppuMapWrite(address, mapped_address)) {
 			_character_memory[mapped_address] = data;
@@ -75,6 +76,7 @@ namespace NES::Cartridge {
 
 	// Reads Data from the Address Location on the Bus
 	bool GameCard::ppu_read(u16 address, u8& data) {
+		assert(address < 0x2000);
 		u32 mapped_address{ 0 };
 		if (_mapper->ppuMapRead(address, mapped_address)) {
 			data = _character_memory[mapped_address];
@@ -125,7 +127,6 @@ namespace NES::Cartridge {
 
 					card->set_mirror(mirror);
 
-					card->set_mapper(std::make_shared<NROM>(card->get_program_banks_count(), card->get_character_banks_count()));
 					break;
 
 				case 2: // version 2.0
@@ -135,6 +136,8 @@ namespace NES::Cartridge {
 					assert(false, "How did you even manage to do it?");
 					break;
 				}
+				
+				card->set_mapper(std::make_shared<NROM>(card->get_program_banks_count(), card->get_character_banks_count()));
 
 				reader.close(); // End Read
 			}

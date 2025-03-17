@@ -37,7 +37,7 @@ namespace NES::CPU {
 	// OPDCODES/Instructions | TODO: Put all read into _data from addressing modes to opcodes
 	u8 R6502::ADC() { // Add With Carry | adds the carry flag in the status bit and a memory value to the accumulator. | A = A + memory + C | C = (result > $FF)
 		_data = read_memory(_address_abs); // Reading costs 1 cycle
-		u16 temp = _accumulator + _data + GetFlag(StateFlags::C);
+		u16 temp = (u16)_accumulator + (u16)_data + (u16)GetFlag(StateFlags::C);
 
 		// Handle Overflow
 		SetFlag(StateFlags::C, temp > 255);
@@ -71,7 +71,7 @@ namespace NES::CPU {
 #endif
 
 		SetFlag(StateFlags::Z, _accumulator == 0);
-		SetFlag(StateFlags::N, _accumulator >> 7);
+		SetFlag(StateFlags::N, _accumulator & 0x80);
 
 #if CPU_TEST
 		std::cout << _accumulator << " " << hexString(_accumulator, 2) << "\n";
@@ -92,13 +92,15 @@ namespace NES::CPU {
 		std::cout << _data << " " << hexString(_data, 2) << "\n";
 #endif
 
-		SetFlag(StateFlags::C, _data & 0x80);
+		//SetFlag(StateFlags::C, _data & 0x80);
 		_data <<= 1; // Modify
 		_data &= 0xFE;
+		SetFlag(StateFlags::C, (_data & 0xFF00) > 0);
 		(this->*write)(_address_abs); // Write
 
-		SetFlag(StateFlags::Z, _data == 0);
-		SetFlag(StateFlags::N, _data >> 7);
+		//SetFlag(StateFlags::Z, _data == 0);
+		SetFlag(StateFlags::Z, (_data & 0x00FF) == 0);
+		SetFlag(StateFlags::N, _data & 0x80);
 
 #if CPU_TEST
 		std::cout << _data << " " << hexString(_data, 2) << "\n";
@@ -120,7 +122,7 @@ namespace NES::CPU {
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
-		if (!GetFlag(StateFlags::C)) {
+		if (GetFlag(StateFlags::C) == 0) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
@@ -128,9 +130,8 @@ namespace NES::CPU {
 			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
-			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
-				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-				return 2;
+			if ((_program_counter & 0xFF00) != (_address_abs & 0xFF00)) { // if the memory Page has changed, then 
+				return 2; // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 			}
 			return 1; // Jump/Branch Taken
 		}
@@ -157,9 +158,8 @@ namespace NES::CPU {
 			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
-			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
-				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-				return 2;
+			if ((_program_counter & 0xFF00) != (_address_abs & 0xFF00)) { // if the memory Page has changed, then 
+				return 2; // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 			}
 			return 1; // Jump/Branch Taken
 		}
@@ -186,9 +186,8 @@ namespace NES::CPU {
 			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
-			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
-				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-				return 2;
+			if ((_program_counter & 0xFF00) != (_address_abs & 0xFF00)) { // if the memory Page has changed, then 
+				return 2; // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 			}
 			return 1; // Jump/Branch Taken
 		}
@@ -237,9 +236,8 @@ namespace NES::CPU {
 			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
-			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
-				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-				return 2;
+			if ((_program_counter & 0xFF00) != (_address_abs & 0xFF00)) { // if the memory Page has changed, then 
+				return 2; // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 			}
 			return 1; // Jump/Branch Taken
 		}
@@ -259,7 +257,7 @@ namespace NES::CPU {
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
-		if (!GetFlag(StateFlags::Z)) {
+		if (GetFlag(StateFlags::Z) == 0) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
@@ -267,9 +265,8 @@ namespace NES::CPU {
 			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
-			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
-				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-				return 2;
+			if ((_program_counter & 0xFF00) != (_address_abs & 0xFF00)) { // if the memory Page has changed, then 
+				return 2; // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 			}
 			return 1; // Jump/Branch Taken
 		}
@@ -289,7 +286,7 @@ namespace NES::CPU {
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
-		if (!GetFlag(StateFlags::N)) {
+		if (GetFlag(StateFlags::N) == 0) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
@@ -297,9 +294,8 @@ namespace NES::CPU {
 			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
-			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
-				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-				return 2;
+			if ((_program_counter & 0xFF00) != (_address_abs & 0xFF00)) { // if the memory Page has changed, then 
+				return 2; // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 			}
 			return 1; // Jump/Branch Taken
 		}
@@ -342,7 +338,7 @@ namespace NES::CPU {
 		std::cout << _program_counter << " " << hexString(_program_counter, 4) << "\n";
 		std::cout << _address_rel << " " << hexString(_address_rel, 2) << "\n";
 #endif
-		if (!GetFlag(StateFlags::V)) {
+		if (GetFlag(StateFlags::V) == 0) {
 			_address_abs = _program_counter;
 			_program_counter += _address_rel;
 
@@ -350,9 +346,8 @@ namespace NES::CPU {
 			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
-			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
-				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-				return 2;
+			if ((_program_counter & 0xFF00) != (_address_abs & 0xFF00)) { // if the memory Page has changed, then 
+				return 2; // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 			}
 			return 1; // Jump/Branch Taken
 		}
@@ -380,9 +375,8 @@ namespace NES::CPU {
 			std::cout << "Branch Taken: " << _program_counter << " " << hexString(_program_counter, 4) << "\n\n";
 #endif
 
-			if ((_program_counter >> 8) != (_address_abs >> 8)) { // if the memory Page has changed, then 
-				clock(); // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
-				return 2;
+			if ((_program_counter & 0xFF00) != (_address_abs & 0xFF00)) { // if the memory Page has changed, then 
+				return 2; // Memory Page Change/Page Wrap Cost 1 cycle [OOPS Cycle]
 			}
 			return 1; // Jump/Branch Taken
 		}
@@ -451,10 +445,12 @@ namespace NES::CPU {
 
 	// Compare A | Carry and Zero are often most easily remembered as inequalities.
 	u8 R6502::CMP() { // A - memory
-		u16 temp = _accumulator - read_memory(_address_abs);
-		SetFlag(StateFlags::Z, temp == 0);
-		SetFlag(StateFlags::C, ((temp & 0x00FF) >= 0) && (!(temp & 0xFF00)));
-		SetFlag(StateFlags::N, temp & 0xFF00); // result bit 7
+		_data = read_memory(_address_abs);
+		u16 temp = (u16)_accumulator - (u16)_data;
+		SetFlag(StateFlags::Z, (temp & 0x00FF) == 0);
+		//SetFlag(StateFlags::C, ((temp & 0x00FF) >= 0) && (!(temp & 0xFF00)));
+		SetFlag(StateFlags::C, _accumulator >= _data);
+		SetFlag(StateFlags::N, temp & 0x0080); // result bit 7
 
 #if CPU_TEST
 		std::cout << "Compare A [CMP]: " << "\n";
@@ -470,10 +466,12 @@ namespace NES::CPU {
 
 	// Compare X | Carry and Zero are often most easily remembered as inequalities.
 	u8 R6502::CPX() {
-		u16 temp = _x_register - read_memory(_address_abs);
-		SetFlag(StateFlags::Z, temp == 0);
-		SetFlag(StateFlags::C, ((temp & 0x00FF) >= 0) && (!(temp & 0xFF00)));
-		SetFlag(StateFlags::N, temp & 0xFF00); // result bit 7
+		_data = read_memory(_address_abs);
+		u16 temp = (u16)_x_register - (u16)_data;
+		SetFlag(StateFlags::Z, (temp & 0x00FF) == 0);
+		//SetFlag(StateFlags::C, ((temp & 0x00FF) >= 0) && (!(temp & 0xFF00)));
+		SetFlag(StateFlags::C, _x_register >= _data);
+		SetFlag(StateFlags::N, temp & 0x0080); // result bit 7
 
 #if CPU_TEST
 		std::cout << "Compare X [CPX]: " << "\n";
@@ -489,10 +487,12 @@ namespace NES::CPU {
 
 	// Compare Y | Carry and Zero are often most easily remembered as inequalities.
 	u8 R6502::CPY() {
-		u16 temp = _y_register - read_memory(_address_abs);
-		SetFlag(StateFlags::Z, temp == 0);
-		SetFlag(StateFlags::C, ((temp & 0x00FF) >= 0) && (!(temp & 0xFF00)));
-		SetFlag(StateFlags::N, temp & 0xFF00); // result bit 7
+		_data = read_memory(_address_abs);
+		u16 temp = (u16)_y_register - (u16)_data;
+		SetFlag(StateFlags::Z, (temp & 0x00FF) == 0);
+		//SetFlag(StateFlags::C, ((temp & 0x00FF) >= 0) && (!(temp & 0xFF00)));
+		SetFlag(StateFlags::C, _y_register >= _data);
+		SetFlag(StateFlags::N, temp & 0x0080); // result bit 7
 
 #if CPU_TEST
 		std::cout << "Compare Y [CPY]: " << "\n";
@@ -518,7 +518,7 @@ namespace NES::CPU {
 		write_memory(_address_abs); // Write
 
 		SetFlag(StateFlags::Z, _data == 0);
-		SetFlag(StateFlags::N, _data >> 7);
+		SetFlag(StateFlags::N, _data & 0x80);
 
 #if CPU_TEST
 		std::cout << "Decrement Memory Value: " << _data + 1 << " " << hexString(_data + 1, 2) << " in Memory: " << hexString(_address_abs, 4) << "\n";
@@ -534,7 +534,7 @@ namespace NES::CPU {
 	u8 R6502::DEX() { // X = X - 1
 		--_x_register;
 		SetFlag(StateFlags::Z, _x_register == 0);
-		SetFlag(StateFlags::N, _x_register >> 7);
+		SetFlag(StateFlags::N, _x_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "Decrement X Register: " << "\n";
@@ -550,7 +550,7 @@ namespace NES::CPU {
 	u8 R6502::DEY() { // Y = Y - 1
 		--_y_register;
 		SetFlag(StateFlags::Z, _y_register == 0);
-		SetFlag(StateFlags::N, _y_register >> 7);
+		SetFlag(StateFlags::N, _y_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "Decrement Y Register: " << "\n";
@@ -577,7 +577,7 @@ namespace NES::CPU {
 #endif
 
 		SetFlag(StateFlags::Z, _accumulator == 0);
-		SetFlag(StateFlags::N, _accumulator >> 7);
+		SetFlag(StateFlags::N, _accumulator & 0x80);
 
 #if CPU_TEST
 		std::cout << _accumulator << " " << hexString(_accumulator, 2) << "\n";
@@ -599,7 +599,7 @@ namespace NES::CPU {
 		write_memory(_address_abs); // Write
 
 		SetFlag(StateFlags::Z, _data == 0);
-		SetFlag(StateFlags::N, _data >> 7);
+		SetFlag(StateFlags::N, _data & 0x80);
 
 #if CPU_TEST
 		std::cout << "Increment Memory Value: " << hexString(_data - 1, 2) << " in Memory: " << hexString(_address_abs, 4) << "\n";
@@ -615,7 +615,7 @@ namespace NES::CPU {
 	u8 R6502::INX() { // X = X + 1
 		++_x_register;
 		SetFlag(StateFlags::Z, _x_register == 0);
-		SetFlag(StateFlags::N, _x_register >> 7);
+		SetFlag(StateFlags::N, _x_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "Increment X Register: " << "\n";
@@ -631,7 +631,7 @@ namespace NES::CPU {
 	u8 R6502::INY() { // Y = Y + 1
 		++_y_register;
 		SetFlag(StateFlags::Z, _y_register == 0);
-		SetFlag(StateFlags::N, _y_register >> 7);
+		SetFlag(StateFlags::N, _y_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "Increment Y Register: " << "\n";
@@ -681,7 +681,7 @@ namespace NES::CPU {
 		_accumulator = read_memory(_address_abs);
 
 		SetFlag(StateFlags::Z, _accumulator == 0);
-		SetFlag(StateFlags::N, _accumulator >> 7);
+		SetFlag(StateFlags::N, _accumulator & 0x80);
 
 #if CPU_TEST
 		std::cout << "Accumulator: " << _accumulator << " " << hexString(_accumulator, 2) << "\n";
@@ -689,14 +689,14 @@ namespace NES::CPU {
 		std::cout << "Negative Flag: " << hexString(GetFlag(StateFlags::N),1) << "\n\n";
 #endif // CPU_TEST
 
-		return 0;
+		return 1;
 	}
 
 	// Load X
 	u8 R6502::LDX() { // X = memory
 		_x_register = read_memory(_address_abs);
 		SetFlag(StateFlags::Z, _x_register == 0);
-		SetFlag(StateFlags::N, _x_register >> 7);
+		SetFlag(StateFlags::N, _x_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
@@ -704,14 +704,14 @@ namespace NES::CPU {
 		std::cout << "Negative Flag: " << hexString(GetFlag(StateFlags::N), 1) << "\n\n";
 #endif // CPU_TEST
 
-		return 0;
+		return 1;
 	}
 
 	// Load Y
 	u8 R6502::LDY() { // Y = memory
 		_y_register = read_memory(_address_abs);
 		SetFlag(StateFlags::Z, _y_register == 0);
-		SetFlag(StateFlags::N, _y_register >> 7);
+		SetFlag(StateFlags::N, _y_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "Y Register: " << _y_register << " " << hexString(_y_register, 2) << "\n";
@@ -719,7 +719,7 @@ namespace NES::CPU {
 		std::cout << "Negative Flag: " << hexString(GetFlag(StateFlags::N), 1) << "\n\n";
 #endif // CPU_TEST
 
-		return 0;
+		return 1;
 	}
 	/// END ///
 
@@ -739,7 +739,7 @@ namespace NES::CPU {
 		(this->*write)(_address_abs); // Write
 
 		SetFlag(StateFlags::Z, _data == 0);
-		SetFlag(StateFlags::N, _data >> 7);
+		SetFlag(StateFlags::N, _data & 0x80);
 
 #if CPU_TEST
 		std::cout << _data << " " << hexString(_data, 2) << "\n";
@@ -756,6 +756,17 @@ namespace NES::CPU {
 		// has no effect; it merely wastes space and CPU cycles. 
 		// This instruction can be useful when writing timed code to delay for a desired amount of time, 
 		// as padding to ensure something does or does not cross a page, or to disable code in a binary.
+
+		switch (_opcode) {
+		case 0x1C:
+		case 0x3C:
+		case 0x5C:
+		case 0x7C:
+		case 0xDC:
+		case 0xFC:
+			return 1;
+			break;
+		}
 
 #if CPU_TEST
 		std::cout << "NO OPERATION! " << "\n\n";
@@ -778,7 +789,7 @@ namespace NES::CPU {
 #endif
 
 		SetFlag(StateFlags::Z, _accumulator == 0);
-		SetFlag(StateFlags::Z, _data >> 7);
+		SetFlag(StateFlags::Z, _accumulator & 0x80);
 
 #if CPU_TEST
 		std::cout << _accumulator << " " << hexString(_accumulator, 2) << "\n";
@@ -865,7 +876,7 @@ namespace NES::CPU {
 		_data &= ~StateFlags::I;
 		delay_assign = &R6502::assign_delay_interrupt_disable_change; // The effect of changing Interrupt Disable [I] flag is delayed 1 instruction, because the flag is changed after IRQ is polled, delaying the effect until IRQ is polled in the next instruction like with CLI and SEI.
 		
-		_status_register |= _data; clock();
+		_status_register |= _data;
 
 #if CPU_TEST
 		std::cout << "Pull Processor Status [PLP]: " << "\n";
@@ -899,7 +910,7 @@ namespace NES::CPU {
 		(this->*write)(_address_abs); // Write
 
 		SetFlag(StateFlags::Z, _data == 0);
-		SetFlag(StateFlags::N, _data >> 7);
+		SetFlag(StateFlags::N, _data & 0x80);
 
 #if CPU_TEST
 		std::cout << _data << " " << hexString(_data, 2) << "\n";
@@ -931,7 +942,7 @@ namespace NES::CPU {
 		temp = GetFlag(StateFlags::C);
 
 		SetFlag(StateFlags::Z, _data == 0);
-		SetFlag(StateFlags::N, _data >> 7);
+		SetFlag(StateFlags::N, _data & 0x80);
 
 #if CPU_TEST
 		std::cout << _data << " " << hexString(_data, 2) << "\n";
@@ -999,12 +1010,12 @@ namespace NES::CPU {
 #else
 		u16 value = ((u16)read_memory(_address_abs)) ^ 0x00FF; // NOT/Invert
 #endif		
-		u16 temp = _accumulator + value + GetFlag(StateFlags::C);
+		u16 temp = (u16)_accumulator + value + (u16)GetFlag(StateFlags::C);
 
 		// Handle Overflow
 		SetFlag(StateFlags::C,  temp > 0x00FF); // unsigned underflow -> Borrow
 		SetFlag(StateFlags::Z, (temp && 0x00FF) == 0);
-		SetFlag(StateFlags::V, (((u16)temp ^ (u16)value) & ((u16)_accumulator ^ (u16)temp)) & 0x0080);
+		SetFlag(StateFlags::V, ((temp ^ value) & ((u16)_accumulator ^ temp)) & 0x0080);
 		SetFlag(StateFlags::N, temp & 0x80);
 
 		_accumulator = temp & 0x00FF;
@@ -1104,7 +1115,7 @@ namespace NES::CPU {
 	u8 R6502::TAX() { // X = A | copies the accumulator value to the X register.
 		_x_register = _accumulator;
 		SetFlag(StateFlags::Z, _x_register == 0);
-		SetFlag(StateFlags::N, _x_register >> 7);
+		SetFlag(StateFlags::N, _x_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "Copy Accumulator to X Register: \n";
@@ -1120,7 +1131,7 @@ namespace NES::CPU {
 	u8 R6502::TAY() { // Y = A | copies the accumulator value to the Y register.
 		_y_register = _accumulator;
 		SetFlag(StateFlags::Z, _y_register == 0);
-		SetFlag(StateFlags::N, _y_register >> 7);
+		SetFlag(StateFlags::N, _y_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "Copy Accumulator to Y Register: \n";
@@ -1136,7 +1147,7 @@ namespace NES::CPU {
 	u8 R6502::TSX() { // X = SP | copies the stack pointer value to the X register. | Does it copy the address, or the value? -> the pointer address
 		_x_register = _stack_pointer;
 		SetFlag(StateFlags::Z, _x_register == 0);
-		SetFlag(StateFlags::N, _x_register >> 7);
+		SetFlag(StateFlags::N, _x_register & 0x80);
 
 #if CPU_TEST
 		std::cout << "Copy Stack Pointer to X Register: \n";
@@ -1151,7 +1162,7 @@ namespace NES::CPU {
 	u8 R6502::TXA() { // A = X | copies the X register value to the accumulator.
 		_accumulator = _x_register;
 		SetFlag(StateFlags::Z, _accumulator == 0);
-		SetFlag(StateFlags::N, _accumulator >> 7);
+		SetFlag(StateFlags::N, _accumulator & 0x80);
 
 #if CPU_TEST
 		std::cout << "Copy X Register to Accumulator: \n";
@@ -1180,7 +1191,7 @@ namespace NES::CPU {
 	u8 R6502::TYA() { // A = Y | copies the Y register value to the accumulator.
 		_accumulator = _y_register;
 		SetFlag(StateFlags::Z, _accumulator == 0);
-		SetFlag(StateFlags::N, _accumulator >> 7);
+		SetFlag(StateFlags::N, _accumulator & 0x80);
 
 #if CPU_TEST
 		std::cout << "Copy Y Register to Accumulator: \n";

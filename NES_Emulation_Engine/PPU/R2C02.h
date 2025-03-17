@@ -16,13 +16,9 @@ namespace NES::PPU { // Picture Processing Unit
 	public:
 		bool		_nmi_trigger{ false };
 
-		R2C02() { 
-			_bus = new PPU_Bus();
-		}
+		R2C02() { }
 
-		~R2C02() {
-			delete _bus;
-		}
+		~R2C02() { }
 
 		// CPU Address BUS read and write:
 
@@ -36,7 +32,7 @@ namespace NES::PPU { // Picture Processing Unit
 		[[nodiscard]] palette get_palette();
 		
 		u8* get_nametable() {
-			return _bus->get_nametable();
+			return _bus.get_nametable();
 		}
 
 		bool clock() {
@@ -66,12 +62,20 @@ namespace NES::PPU { // Picture Processing Unit
 			return _nmi_trigger;
 		}
 
+		void reset() {
+			_status_register.value = 0x00;
+			_mask_register.value = 0x00;
+			_ctrl_register.value = 0x00;
+			_address_abs = 0x0000;
+			_address_inc = 0x0000;
+		}
+
 		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) {
-			_bus->connect_card(card);
+			_bus.connect_card(card);
 		}
 
 	private:
-		PPU_Bus*	_bus{ nullptr };
+		PPU_Bus		_bus{};
 
 		u8			_address_latch{ 0x00 }; // writing to the Low byte or the High byte
 		u8			_ppu_read_buffer{ 0x00 }; // since, reading data from ppu is delayed by 1 cycle

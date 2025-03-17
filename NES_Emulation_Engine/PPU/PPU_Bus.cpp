@@ -16,11 +16,8 @@ namespace NES::PPU {
 
 		u16 get_palette_ram_address(u16 address) {
 			address &= 0x001F;
-			if ((address & 0x03) == 0) {
-				return address & 0x0F;
-			} else {
-				return address;
-			}
+			if ((address & 0x03) == 0) return address & 0x0F;
+			else return address;
 		}
 	} // anonymous namespace
 
@@ -50,6 +47,20 @@ namespace NES::PPU {
 			break;
 
 			case 2: // $3000-3EFF -> Unused Cartridge Space
+				// temp
+				address &= 0x0FFF;
+				if (_card->_mirror == Cartridge::GameCard::Mirror::VERTICAL) {
+					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
+					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[address & 0x03FF];
+					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+				}
+				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
+					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
+					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[address & 0x03FF];
+					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+				}
 			break;
 
 			case 3: // $3F00-3FFF -> Palette RAM
@@ -99,6 +110,19 @@ namespace NES::PPU {
 				return _data;
 
 			case 2: // $3000-3EFF -> Unused Cartridge Space
+				address &= 0x0FFF;
+				if (_card->_mirror == Cartridge::GameCard::Mirror::VERTICAL) {
+					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
+					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[address & 0x03FF];
+					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+				}
+				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
+					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
+					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[address & 0x03FF];
+					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+				}
 			break;
 
 			case 3: // $3F00-3FFF -> Palette RAM

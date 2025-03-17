@@ -28,7 +28,7 @@ namespace NES::CPU {
 			break;
 
 			case 1: // $2000-$0x3FFF PPU
-				_ppu->cpubus_write(address, data);
+				_ppu.cpubus_write(address, data);
 			break; 
 
 			case 2: // $4000 I/O Registers + Cartridge
@@ -45,6 +45,40 @@ namespace NES::CPU {
 
 			default: break;
 		}
+
+		/*
+		if (_cartridge->cpu_write(address, data))
+		{
+			// The cartridge "sees all" and has the facility to veto
+			// the propagation of the bus transaction if it requires.
+			// This allows the cartridge to map any address to some
+			// other data, including the facility to divert transactions
+			// with other physical devices. The NES does not do this
+			// but I figured it might be quite a flexible way of adding
+			// "custom" hardware to the NES in the future!
+		}
+		else if (address >= 0x0000 && address <= 0x1FFF)
+		{
+			// System RAM Address Range. The range covers 8KB, though
+			// there is only 2KB available. That 2KB is "mirrored"
+			// through this address range. Using bitwise AND to mask
+			// the bottom 11 bits is the same as addr % 2048.
+			_cpuRam[address & 0x07FF] = data;
+
+		}
+		else if (address >= 0x2000 && address <= 0x3FFF)
+		{
+			// PPU Address range. The PPU only has 8 primary registers
+			// and these are repeated throughout this range. We can
+			// use bitwise AND operation to mask the bottom 3 bits, 
+			// which is the equivalent of addr % 8.
+			_ppu.cpubus_write(address & 0x0007, data);
+		}
+		else if (address >= 0x4016 && address <= 0x4017)
+		{
+			_controller_state[address & 0x0001] = _controller[address & 0x0001];
+		}
+		*/
 	}
 
 	// Reads from the Address Bus
@@ -57,7 +91,7 @@ namespace NES::CPU {
 			case 0: return _ram.read(address);
 
 			case 1: // $2000-$0x3FFF PPU
-				return _ppu->cpubus_read(address);
+				return _ppu.cpubus_read(address);
 
 			case 2: // $4000 I/O Registers + Cartridge
 				if (chip_select_4000(address)) // $4020-5FFF Cartridge
@@ -92,5 +126,30 @@ namespace NES::CPU {
 		}
 
 		return 0x00; // Address Out of Range | Like how would this even happen? address range for uint_16 -> [0x0000, 0xFFFF] ??
+
+		/*
+		uint8_t data = 0x00;
+		if (_cartridge->cpu_read(address, data))
+		{
+			// Cartridge Address Range
+		}
+		else if (address >= 0x0000 && address <= 0x1FFF)
+		{
+			// System RAM Address Range, mirrored every 2048
+			data = _cpuRam[address & 0x07FF];
+		}
+		else if (address >= 0x2000 && address <= 0x3FFF)
+		{
+			// PPU Address range, mirrored every 8
+			data = _ppu.cpubus_read(address & 0x0007, bReadOnly);
+		}
+		else if (address >= 0x4016 && address <= 0x4017)
+		{
+			data = (_controller_state[address & 0x0001] & 0x80) > 0;
+			_controller_state[address & 0x0001] <<= 1;
+		}
+
+		return data;
+		*/
 	}
 }
