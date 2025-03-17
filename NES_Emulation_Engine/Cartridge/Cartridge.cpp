@@ -108,6 +108,7 @@ namespace NES::Cartridge {
 
 				u8 mapper_id = (header.flag_7 & 0xF0) | (header.flag_6 >> 4);
 				u8 format = (header.flag_7 & 0x0C) >> 2;
+				u8 mirror = header.flag_6 & 0x01;
 
 				// Currently only use version 1.0
 				format = 1;
@@ -121,6 +122,8 @@ namespace NES::Cartridge {
 					card->init_program_memory(reader);
 					card->set_character_banks_count(header.CHR_ROM_Count);
 					card->init_character_memory(reader);
+
+					card->set_mirror(mirror);
 
 					card->set_mapper(std::make_shared<NROM>(card->get_program_banks_count(), card->get_character_banks_count()));
 					break;

@@ -20,77 +20,75 @@ namespace NES::CPU {
 	// Writes to the Address Bus
 	void Bus::write(u16 address, u8 data) {
 		assert(address >= 0x0000 && address <= 0xFFFF);
+		assert(address != 0x8153);
 
 		switch (chip_select(address)) {
-		case 0: // $0000 SRAM/WRAM
-			_ram->write(address, data);
+			case 0: // $0000 SRAM/WRAM
+				_ram.write(address, data);
 			break;
 
-		case 1: // $2000-$0x3FFF PPU
-			_ppu->cpubus_write(address, data);
+			case 1: // $2000-$0x3FFF PPU
+				_ppu->cpubus_write(address, data);
 			break; 
 
-		case 2: // $4000 I/O Registers + Cartridge
-			if (chip_select_4000(address)) { // $4020-5FFF Cartridge
+			case 2: // $4000 I/O Registers + Cartridge
+				if (chip_select_4000(address)) { // $4020-5FFF Cartridge
+					_cartridge->cpu_write(address, data);
+				} else { // $4000-401F I/O Registers
+
+				}
+			break; 
+
+			case 3: // $6000 Cartridge
 				_cartridge->cpu_write(address, data);
-			} else { // $4000-401F I/O Registers
-
-			}
-			break; 
-
-		case 3: // $6000 Cartridge
-			_cartridge->cpu_write(address, data);
 			break;
 
-		default:
-			break;
+			default: break;
 		}
 	}
 
 	// Reads from the Address Bus
 	u8 Bus::read(u16 address, bool bReadOnly) {
-		//assert(address); Can't assert, I'm using the whole range...
 		assert(address >= 0x0000 && address <= 0xFFFF);
+		assert(address != 0x8153);
 
 		switch (chip_select(address)) {
-		case 0: // $0000 SRAM/WRAM
-			return _ram->read(address);
+			// $0000 SRAM/WRAM
+			case 0: return _ram.read(address);
 
-		case 1: // $2000-$0x3FFF PPU
-			return _ppu->cpubus_read(address);
+			case 1: // $2000-$0x3FFF PPU
+				return _ppu->cpubus_read(address);
 
-		case 2: // $4000 I/O Registers + Cartridge
-			if (chip_select_4000(address)) // $4020-5FFF Cartridge
-				return _cartridge->cpu_read(address);
-			else { // $4000-401F I/O Registers
+			case 2: // $4000 I/O Registers + Cartridge
+				if (chip_select_4000(address)) // $4020-5FFF Cartridge
+					return _cartridge->cpu_read(address);
+				else { // $4000-401F I/O Registers
 
-			}
+				}
 			break;
 
-		case 3: // $6000 Cartridge
+			case 3: // $6000 Cartridge
 #if !(CPU_TEST | RAM_TEST)
-			return _cartridge->cpu_read(address);
+				return _cartridge->cpu_read(address);
 #else
-			switch (address) {
+				switch (address) {
 
-			// NMI Handler Address:
-			case 0xFFFA: return 0x00;
-			case 0xFFFB: return 0x00;
+				// NMI Handler Address:
+				case 0xFFFA: return 0x00;
+				case 0xFFFB: return 0x00;
 
-			// Program Address:
-			case 0xFFFC: return 0x00;
-			case 0xFFFD: return 0x00;
+				// Program Address:
+				case 0xFFFC: return 0x00;
+				case 0xFFFD: return 0x00;
 
-			// IRQ Handler Address:
-			case 0xFFFE: return 0x00;
-			case 0xFFFF: return 0x07;
+				// IRQ Handler Address:
+				case 0xFFFE: return 0x00;
+				case 0xFFFF: return 0x07;
 
-			default: break;
-			}
+		}
 #endif
 
-		default:
-			break;
+			default: break;
 		}
 
 		return 0x00; // Address Out of Range | Like how would this even happen? address range for uint_16 -> [0x0000, 0xFFFF] ??

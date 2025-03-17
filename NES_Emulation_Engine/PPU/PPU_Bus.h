@@ -21,6 +21,10 @@ namespace NES::PPU {
 			return _palette_RAM;
 		}
 
+		u8* get_nametable() {
+			return _vRAM;
+		}
+
 		palette get_palette_data() {
 			palette palette{};
 			for (int i{ 0 }; i < 32; ++i) {
@@ -34,7 +38,6 @@ namespace NES::PPU {
 		}
 
 		void reset() {
-
 			for (int i{ 0 }; i < 32; i) {
 				_palette_RAM[i++] = 0x0F;
 				_palette_RAM[i++] = 0x2D;
@@ -58,7 +61,7 @@ namespace NES::PPU {
 		u8		_pattern_table[2][4096]; // Exist on the cartridge -> TODO: shift to cartridge
 
 		// VRAM -> 2KB -> Nametable Memory
-		u8		_vRAM[2][1024]; // $2000-$2FFF | Mirrors of _VRAM -> $3000-$3EFF
+		u8		_vRAM[2*1024]; // $2000-$2FFF | Mirrors of _VRAM -> $3000-$3EFF
 
 		// Palette RAM indexes + Mirrors -> $3F00-$3F1F + $3F20-$3FFF
 		// Palette accesses the NES's main Palette of colours it can display -> range = 0x00-0x3F

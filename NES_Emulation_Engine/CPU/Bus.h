@@ -14,18 +14,17 @@ namespace NES::CPU {
 			_cartridge = Cartridge::load_file("C:/Users/shrey/source/repos/NES_Emulator/x64/Debug/test.nes");
 			_cartridge_inserted = true;
 
-			_ram = new NES::Memory::RAM();
 			_ppu = new NES::PPU::R2C02();
 
 			_ppu->connect_card(_cartridge);
 		}
 
 		~Bus() { // Delete Pointers
-			delete _ram;
 			delete _ppu;
 		}
 
 		void reset() {
+			_ram.reset();
 
 #if RAM_TEST
 			_ram->write(0x0000, 0x76);
@@ -56,10 +55,11 @@ namespace NES::CPU {
 		void set_cartridge_inserted(bool value) { _cartridge_inserted = value; }
 
 
-		void disassembleRAM() { _ram->disassemble_wram(); }
+		void disassembleRAM() { _ram.disassemble_wram(); }
 		void disassembleRAM(u32 start, u32 end) { // Disassembler - [Start, End)
-			_ram->disassemble_wram(start, end); 
+			_ram.disassemble_wram(start, end); 
 		}
+
 		bool clock() { 
 			for (int i{ 0 }; i < 3; ++i) {
 				_ppu->clock();
@@ -69,6 +69,14 @@ namespace NES::CPU {
 				}
 			}
 			return false;
+		}
+
+		void get_ppu(PPU::R2C02*& ppu) {
+			ppu = _ppu;
+		}
+
+		u8* get_nametable() {
+			return _ppu->get_nametable();
 		}
 
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
@@ -90,7 +98,7 @@ namespace NES::CPU {
 
 		// I/O Hardware
 		NES::PPU::R2C02*							_ppu;
-		NES::Memory::RAM*							_ram;
+		NES::Memory::RAM							_ram{};
 
 	};
 

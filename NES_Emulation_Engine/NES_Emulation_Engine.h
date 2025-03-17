@@ -2,13 +2,15 @@
 
 #include "Resources/resource.h"
 
-#define SCREEN_WIDTH 256
-#define SCREEN_HEIGHT 240
+//#define SCREEN_WIDTH 256
+#define SCREEN_WIDTH 526
+//#define SCREEN_HEIGHT 240
+#define SCREEN_HEIGHT 280
 #define NTSC_SCREEN_HEIGHT 262
 #define PAL_SCREEN_HEIGHT 312
 #define RENDER_SCALE_MULTIPLIER 1
 
-#define WINDOWS_GDI 0
+#define WINDOWS_GDI 1
 #define GLFW 1
 
 struct NES_Colour {

@@ -21,15 +21,16 @@ namespace NES::Memory {
 		RAM() {
 			for (auto& i : _ram) i = 0x00; // Clear RAM before creating, Just in Case...
 
-			for (int i{ 0 }; i < 2048; ++i) { // u8 makes it ill defined... [Just Warning tho]
-				//_ram_heap[i] = 0x00; // Clear RAM before creating, Just in Case...
-				_ram_heap[i] = 0x00; // Clear RAM before creating, Just in Case...
-			}
+			//for (int i{ 0 }; i < 2048; ++i) { // u8 makes it ill defined... [Just Warning tho]
+			//	//_ram_heap[i] = 0x00; // Clear RAM before creating, Just in Case...
+			//	_ram_heap[i] = 0x00; // Clear RAM before creating, Just in Case...
+			//}
 		}
 
 		~RAM() {
-			delete[] _ram_heap;
+			//delete[] _ram_heap;
 		}
+
 
 		u8 read(u16 address, bool bReadOnly = false) {
 			return _ram[get_address(address)];
@@ -37,10 +38,10 @@ namespace NES::Memory {
 
 		void write(u16 address, u8 data) {
 			assert(address >= 0x0000 && address <= 0x1FFF); // RAM and it's mirrors
-			assert(data >= 0x00 && data <= 0xFF); // Is this check necessary?
-
 			_ram[get_address(address)] = data;
 		}
+
+		void reset() { for (auto& i : _ram) i = 0x00; }
 
 		void disassemble_wram();
 		void disassemble_wram(u32 start, u32 end); // Disassembler - [Start, End)
@@ -49,6 +50,6 @@ namespace NES::Memory {
 		// WRAM - Work RAM -> 2KB Static RAM [SRAM]
 
 		std::array<u8, 2048> _ram{}; // Should I use the stack or heap?
-		u8* const _ram_heap = new u8[2048];
+		//u8* const _ram_heap = new u8[2048];
 	};
 }

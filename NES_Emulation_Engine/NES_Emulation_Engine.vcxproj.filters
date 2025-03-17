@@ -7,9 +7,9 @@
     <ClCompile Include="PPU\R2C02.cpp" />
     <ClCompile Include="Cartridge\Cartridge.cpp" />
     <ClCompile Include="Cartridge\iNES1.0\M_000_NROM.cpp" />
-    <ClCompile Include="Memory\RAM.cpp" />
     <ClCompile Include="PPU\PPU_Bus.cpp" />
     <ClCompile Include="Memory\VRAM.cpp" />
+    <ClCompile Include="Memory\RAM.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU\Bus.h" />

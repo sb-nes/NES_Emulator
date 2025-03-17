@@ -93,7 +93,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)packages\glew.2.2.0\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)packages\glew.2.2.0\lib\Release\x64;</AdditionalLibraryDirectories>
       <AdditionalDependencies>glew32s.lib;opengl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
@@ -113,7 +113,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)packages\glew.2.2.0\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>

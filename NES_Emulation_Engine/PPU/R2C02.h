@@ -34,8 +34,12 @@ namespace NES::PPU { // Picture Processing Unit
 		[[nodiscard]] sprite_tile get_tile_at_address(u16 address, u8 palette_idx);
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx);
 		[[nodiscard]] palette get_palette();
+		
+		u8* get_nametable() {
+			return _bus->get_nametable();
+		}
 
-		void clock() {
+		bool clock() {
 			// Clock function of the PPU
 
 			if (_scanline == -1 && _cycle == 1) {
@@ -58,6 +62,8 @@ namespace NES::PPU { // Picture Processing Unit
 			}
 
 			// TODO: implement rendering here
+
+			return _nmi_trigger;
 		}
 
 		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) {

@@ -14,6 +14,13 @@ namespace NES::Cartridge {
 	class GameCard {
 	public:
 
+		enum class Mirror {
+			HORIZONTAL = 0,
+			VERTICAL = 1,
+			ONSCREEN_LO = 2,
+			ONSCREEN_HI = 3,
+		} _mirror = Mirror::HORIZONTAL;
+
 		void init_program_memory(std::ifstream& reader){
 			_program_memory.resize(_program_banks_count * 16384); // Each Program ROM chip size is 16KB
 			reader.read((char*)_program_memory.data(), _program_memory.size());
@@ -30,6 +37,7 @@ namespace NES::Cartridge {
 		u8 get_character_banks_count() { return _character_banks_count; }
 
 		void set_cartridge_size(u64 size) { _size = size; }
+		void set_mirror(u8 mirror) { _mirror = mirror ? Mirror::VERTICAL : Mirror::HORIZONTAL; }
 
 		void set_mapper(std::shared_ptr<Mapper> map) { _mapper = map; }
 		std::shared_ptr<Mapper> get_mapper() { return _mapper; }
