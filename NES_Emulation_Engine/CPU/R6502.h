@@ -205,7 +205,7 @@ namespace NES::CPU {
 			_bus.disassembleRAM(start, end); 
 		}
 
-		void get_ppu(PPU::R2C02& ppu) {
+		void get_ppu(PPU::R2C02*& ppu) {
 			_bus.get_ppu(ppu);
 		}
 

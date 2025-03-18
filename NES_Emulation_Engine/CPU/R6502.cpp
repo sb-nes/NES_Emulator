@@ -990,7 +990,7 @@ namespace NES::CPU {
 		++_stack_pointer;
 		_program_counter |= (u16)read_memory(0x0100 + _stack_pointer) << 8; // Address - High
 
-		// ++_program_counter; it happens during JSR, due to the way i've programmed the increment of PC
+		++_program_counter;
 
 #if CPU_TEST
 		std::cout << "Return From Subroutine [RTS]: " << "\n";

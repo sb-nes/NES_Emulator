@@ -15,7 +15,7 @@ using namespace NES;
 // Platform Independant Code
 
 CPU::R6502				_nes_instance{};
-PPU::R2C02				_ppu_instance{};
+PPU::R2C02*				_ppu_instance{};
 pattern_table			_table1;
 pattern_table			_table2;
 palette					_palette;
@@ -329,10 +329,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			// TODO: Display status of all registers on the window
 
 			// Get Sprites/Tiles, Palettes for debug purposes
-			_table1 = _ppu_instance.get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
-			_table2 = _ppu_instance.get_pattern_table(1, 3); // is it working properly?
-			_palette = _ppu_instance.get_palette();
-			_nametable = _ppu_instance.get_nametable();
+			_table1 = _ppu_instance->get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
+			_table2 = _ppu_instance->get_pattern_table(1, 3); // is it working properly?
+			_palette = _ppu_instance->get_palette();
+			_nametable = _ppu_instance->get_nametable();
 
 			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
 

@@ -51,10 +51,6 @@ namespace NES::CPU {
 	u8 Bus::read(u16 address, bool bReadOnly) {
 		assert(address >= 0x0000 && address <= 0xFFFF);
 
-		if (address == 0x0014) {
-			int x = 0;
-		}
-
 		switch (chip_select(address)) {
 			// $0000 SRAM/WRAM
 			case 0: return _ram.read(address);

@@ -67,8 +67,8 @@ namespace NES::CPU {
 			return false;
 		}
 
-		void get_ppu(PPU::R2C02& ppu) {
-			ppu = _ppu;
+		void get_ppu(PPU::R2C02*& ppu) {
+			ppu = &_ppu;
 		}
 
 		// Writes Data to the Address Location on the Bus
