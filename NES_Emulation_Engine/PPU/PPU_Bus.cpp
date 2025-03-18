@@ -5,7 +5,7 @@ namespace NES::PPU {
 		u16 chip_select(u16 address) { // Acts as the discrete logic chip 74LS139 -> the NES combines a relatively small number of pins to produce a chip select signal for each of the individual components.
 			if ((address & 0x2000)) {
 				if (!(address & 0x1000)) return 1;
-				else if (address & 0x0F00)
+				else if (address >= 0x3F00)
 					return 3;
 				else
 					return 2;
@@ -94,19 +94,6 @@ namespace NES::PPU {
 					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
 					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
 				}
-				/*
-				if (_card->_mirror == Cartridge::GameCard::Mirror::VERTICAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[0][address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[1][address & 0x03FF];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0][address & 0x03FF];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[1][address & 0x03FF];
-				} else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[0][address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0][address & 0x03FF];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[1][address & 0x03FF];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[1][address & 0x03FF];
-				}
-				*/
 				return _data;
 
 			case 2: // $3000-3EFF -> Unused Cartridge Space

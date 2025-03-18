@@ -27,9 +27,9 @@ namespace NES::PPU { // [Picture Processing Unit]
 			case 0x0002: // PPUSTATUS -> Status
 			break; 
 
-		case 0x0003: break; // OAMADDR -> [Object Attribute Memory] OAM address
-		case 0x0004: break; // OAMDATA -> [Object Attribute Memory] OAM data
-		case 0x0005: break; // PPUSCROLL -> Scroll
+			case 0x0003: break; // OAMADDR -> [Object Attribute Memory] OAM address
+			case 0x0004: break; // OAMDATA -> [Object Attribute Memory] OAM data
+			case 0x0005: break; // PPUSCROLL -> Scroll
 
 			case 0x0006: // PPUADDR -> [Picture Processing Unit] Memory Address
 				if (_address_latch == 0) { // store high address
@@ -57,10 +57,10 @@ namespace NES::PPU { // [Picture Processing Unit]
 
 		switch (get_cpu_address(address)) {
 			
-		case 0x0000: break; // PPUCTRL -> Control
-		case 0x0001: break; // PPUMASK -> Mask
+			case 0x0000: break; // PPUCTRL -> Control	| W
+			case 0x0001: break; // PPUMASK -> Mask		| W
 
-			case 0x0002: // PPUSTATUS -> Status
+			case 0x0002: // PPUSTATUS -> Status			| R/W
 #if PPU_TEST
 				_status_register.v_blank = 1; // for testing purposes | OLC's method
 #endif // PPU_TEST

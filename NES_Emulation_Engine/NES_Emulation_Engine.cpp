@@ -308,6 +308,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 		// if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
 
 		if (!createNES()) return 0;
+		_nes_instance.get_ppu(_ppu_instance);
 
 		while (is_running) {
 			// Engine's update function
@@ -321,15 +322,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			}
 
 			// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
+			//for (int i = 0; i < 1000; ++i) {
+			//}
 			_nes_instance.clock();
 
 			// TODO: Display status of all registers on the window
 
 			// Get Sprites/Tiles, Palettes for debug purposes
-			_table1 = _nes_instance.get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
-			_table2 = _nes_instance.get_pattern_table(1, 3); // is it working properly?
-			_palette = _nes_instance.get_palette();
-			_nametable = _nes_instance.get_nametable();
+			_table1 = _ppu_instance.get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
+			_table2 = _ppu_instance.get_pattern_table(1, 3); // is it working properly?
+			_palette = _ppu_instance.get_palette();
+			_nametable = _ppu_instance.get_nametable();
 
 			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
 

@@ -71,15 +71,6 @@ namespace NES::CPU {
 			ppu = _ppu;
 		}
 
-		u8* get_nametable() {
-			return _ppu.get_nametable();
-		}
-
-		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
-			return _ppu.get_pattern_table(pattern_table_idx, palette_idx);
-		}
-		[[nodiscard]] palette get_palette() { return _ppu.get_palette(); }
-
 		// Writes Data to the Address Location on the Bus
 		void write(u16 address, u8 data);
 		// Reads Data from the Address Location on the Bus

@@ -134,41 +134,42 @@ namespace NES::CPU {
 				std::cout << "0x" << hexString(_opcode, 2) << " " << _lookup[_opcode >> 4][_opcode & 0x0F].name << " ";
 
 				if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMP) {
-					std::cout << "IMP\n";
+					std::cout << "IMP ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMM) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IMM}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IMM} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZP0) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZP0}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZP0} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPX) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZPX}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZPX} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPY) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZPY}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZPY} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::REL) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {REL}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {REL} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZX) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IZX}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IZX} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZY) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IZY}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IZY} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABS) {
-					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABS}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABS} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABX) {
-					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABX}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABX} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABY) {
-					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABY}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABY} ";
 				}
 				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IND) {
-					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {IND}\n";
+					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {IND} ";
 				}
+
 #else
 				std::cout << "\n";
 #endif // OPCODE_DEBUG
@@ -176,9 +177,13 @@ namespace NES::CPU {
 				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
 				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
 				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
-
+				
 				(this->*delay_change)();
 				(this->*delay_assign)(); // fbrereto -> https://stackoverflow.com/questions/2898316/using-a-member-function-pointer-within-a-class
+
+#if OPCODE_DEBUG
+				std::cout << hexString(_accumulator, 2) << " " << hexString(_x_register, 2) << " " << hexString(_y_register, 2) << "\n";
+#endif // OPCODE_DEBUG
 
 #if CPU_TEST
 				--_instructions_count;
@@ -203,14 +208,6 @@ namespace NES::CPU {
 		void get_ppu(PPU::R2C02& ppu) {
 			_bus.get_ppu(ppu);
 		}
-
-		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx) {
-			return _bus.get_pattern_table(pattern_table_idx, palette_idx);
-		}
-		
-		[[nodiscard]] palette get_palette() { return _bus.get_palette(); }
-
-		u8* get_nametable() { return _bus.get_nametable(); }
 
 		// Get functions for CPU registers
 		[[nodiscard]] u8 get_status_register() { return _status_register; }
@@ -978,8 +975,7 @@ namespace NES::CPU {
 
 		// Reads from the Memory on the Address Bus
 		u8 read_accumulator(u16 address, bool bReadOnly = false) {
-			u8 data{ _accumulator };
-			return data;
+			return _accumulator;
 		}
 
 		// Reads from the Memory on the Address Bus

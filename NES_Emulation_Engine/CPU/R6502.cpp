@@ -657,6 +657,10 @@ namespace NES::CPU {
 	// Jump to Subroutine
 	u8 R6502::JSR() {
 		// Write Next Program Counter to the Stack
+		// [Notably, the return address on the stack points 1 byte before the start of the next instruction]
+
+		--_program_counter; // <- This was the problem, which i didn't focus into.
+
 		_data = (_program_counter >> 8) & 0x00FF;
 		write_memory(0x0100 + _stack_pointer);
 		--_stack_pointer;
