@@ -15,7 +15,7 @@
 
 
 ~~Speed of the output using GDI is slower than expected due to using Software Rendering. I'll either have to optimise some other parts [hard way], or use some other window api which includes Hardware Rendering[easy and logical way].~~
-The real reason the CPU and the whole application itself was slow because of 'std::cout' (and other functions related to it). (I'll post the time it takes for 'cout' later)
+The real reason the CPU and the whole application itself was slow because of `std::cout` (and other functions related to it). (I'll post the time it takes for `cout` later)
 ![console output](https://github.com/sb-nes/NES_Emulator/blob/sane/images/console1.gif)
 
 
