@@ -1,16 +1,18 @@
 # NES_Emulator
 
 ## Currently Tested:
-1. SRAM/WRAM - Passed
-2. CPU/R-MOS-6502 - Passed
-3. Cartridge ROM Loading [.nes/ines 1.0] - Passed
-4. Mapper 0 - Passed
+1. SRAM/WRAM - `Passed`
+2. CPU/R-MOS-6502 - `Passed`
+3. Cartridge ROM Loading [.nes/ines 1.0] - `Passed`
+4. Mapper 0 - `Passed`
 5. PPU/R-MOS-2C02 - Testing
 6. Output Window - Testing
 7. Timing - Testing
 
 
 ![palette read 1](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu1.gif)
+
+There was an error in reading `pattern tables`, due to the way I implemented switching between different emulated address spaces. It is seen on the right/second pattern table, which should have shown no data at all.
 ![palette read 2](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu2.gif)
 
 
