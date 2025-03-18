@@ -13,6 +13,8 @@
 #define WINDOWS_GDI 1
 #define GLFW 1
 
+#define CONSOLE_DBG_OUT 0
+
 struct NES_Colour {
 	std::string				name{ "Black" };
 	u8						red{ 0 };

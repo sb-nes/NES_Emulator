@@ -384,7 +384,7 @@ void update_frame() {
 // Subsystem Windows: Entry Point
 int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
-#if _DEBUG | 1
+#if _DEBUG | CONSOLE_DBG_OUT
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); //Google it, dammit
 	attach_console();
 #endif
