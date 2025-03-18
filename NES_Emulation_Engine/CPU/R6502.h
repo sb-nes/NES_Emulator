@@ -82,8 +82,6 @@ namespace NES::CPU {
 			_bus.reset();
 			_ticks = 0;
 
-			//interrupt();
-
 #if CPU_TEST
 			_cycles = 0;
 #else
@@ -127,9 +125,9 @@ namespace NES::CPU {
 				assert(_cycles == 0);
 				++_cycles; // Since, whenever i read, i use one cpu cycle in the read function
 				_opcode = read_memory(_program_counter++);
-				std::cout << _ticks << " ";
 
 #if OPCODE_DEBUG
+				std::cout << _ticks << " ";
 				std::cout << "0x" << hexString(_program_counter - 1, 4) << " ";
 				std::cout << "0x" << hexString(_opcode, 2) << " " << _lookup[_opcode >> 4][_opcode & 0x0F].name << " ";
 
@@ -170,8 +168,6 @@ namespace NES::CPU {
 					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {IND} ";
 				}
 
-#else
-				std::cout << "\n";
 #endif // OPCODE_DEBUG
 
 				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
@@ -197,8 +193,8 @@ namespace NES::CPU {
 		}
 		/// END INTERRUPTS ///
 
-		[[nodiscard]] Bus GetBus() { return _bus; }
 		void InitializeBus(std::string filename = "test.nes") {  }
+		[[nodiscard]] Bus GetBus() { return _bus; }
 
 		void DisassembleRAM() { _bus.disassembleRAM(); }
 		void DisassembleRAM(u32 start, u32 end) { // Disassembler - [Start, End)
@@ -962,10 +958,6 @@ namespace NES::CPU {
 
 		void debug_status_register();
 
-		// Writes to the Memory on the Address Bus
-		void write_memory(u16 address) {
-			_bus.write(address, _data);
-		}
 
 		// Writes to the Accumulator on the Chip
 		void write_accumulator(u16) {
@@ -973,16 +965,14 @@ namespace NES::CPU {
 			_accumulator = _data;
 		}
 
-		// Reads from the Memory on the Address Bus
-		u8 read_accumulator(u16 address, bool bReadOnly = false) {
-			return _accumulator;
-		}
+		// Reads from the Accumulator on the Chip
+		u8 read_accumulator(u16 address, bool bReadOnly = false) { return _accumulator; }
+
+		// Writes to the Memory on the Address Bus
+		void write_memory(u16 address) { _bus.write(address, _data); }
 
 		// Reads from the Memory on the Address Bus
-		u8 read_memory(u16 address, bool bReadOnly = false) {
-			u8 data{ _bus.read(address) };
-			return data;
-		}
+		u8 read_memory(u16 address, bool bReadOnly = false) { return _bus.read(address); }
 
 		// Handles interrupt calls and points to the Respective Handler
 		void interrupt() {

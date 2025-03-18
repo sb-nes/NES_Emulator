@@ -1,10 +1,13 @@
 // NES_Emulation_Engine.cpp : 'main' function -> Program Execution Entry Point.
 
 #include <iostream>
+#include <thread>
+#include <future>
 #include <crtdbg.h>
 
 #include "CPU/R6502.h"
 #include "NES_Emulation_Engine.h"
+
 //#include "Utilities/Disassembler.h"
 
 // For Timing and other clock stuff
@@ -14,14 +17,17 @@ using namespace NES;
 
 // Platform Independant Code
 
-CPU::R6502				_nes_instance{};
-PPU::R2C02*				_ppu_instance{};
-pattern_table			_table1;
-pattern_table			_table2;
-palette					_palette;
-u8*						_nametable;
-int						_count{ 0 };
-unsigned int			_tick{ 0 };
+CPU::R6502					_nes_instance{};
+PPU::R2C02*					_ppu_instance{};
+pattern_table				_table1;
+pattern_table				_table2;
+palette						_palette;
+u8*							_nametable;
+int							_count{ 0 };
+unsigned int				_tick{ 0 };
+bool						_dispatched{ false };
+std::mutex					_nes_mutex;
+std::future<void>			_nes;
 
 bool createNES() {
 	std::cout << "\nCreating NES Hardware Instance!" << std::endl;
@@ -278,6 +284,103 @@ int init_frame() {
 	return 1;
 }
 
+void update_frame() {
+
+	// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
+	while (!_ppu_instance->_frame_scan_complete) {
+		_nes_instance.clock();
+	}
+
+	// Get Sprites/Tiles, Palettes for debug purposes
+	_table1 = _ppu_instance->get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
+	_table2 = _ppu_instance->get_pattern_table(1, 3); // is it working properly?
+	_palette = _ppu_instance->get_palette();
+	_nametable = _ppu_instance->get_nametable();
+
+#if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
+	static unsigned int p = 0;
+	if ((_frame.width * _frame.height * RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER) >= (SCREEN_WIDTH * SCREEN_HEIGHT * RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER)) { // to fix error on minimize
+		_frame.pixels[(p++) % (_frame.width * _frame.height)] = (rand() << 16) | (rand() << 8) | rand();
+		_frame.pixels[((rand() << 16) | (rand() << 8) | rand()) % (_frame.width * _frame.height)] = 0;
+	}
+#else
+
+	std::lock_guard<std::mutex> lock(_nes_mutex);
+
+	// Tables
+	for (int y = 127; y >= 0; --y) { // Each Scanline
+		for (int x = 0; x < 128; ++x) { // Each Pixel
+			u8 pixel1 = _table1[127 - y][x];
+			u8 pixel2 = _table2[127 - y][x];
+			u32 pixel_colour1 = (_pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].red << 16) | (_pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].green << 8) | _pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].blue;
+			u32 pixel_colour2 = (_pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].red << 16) | (_pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].green << 8) | _pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].blue;
+
+			// So that it doesn't overwrite some other memory or worse, crash the program:
+			//assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height)); 
+
+			for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
+				for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
+					_frame.pixels[256 * RENDER_SCALE_MULTIPLIER + (((y * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + w] = pixel_colour1;
+					_frame.pixels[256 * RENDER_SCALE_MULTIPLIER + (((y * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + ((x + 128) * RENDER_SCALE_MULTIPLIER) + w] = pixel_colour2;
+				}
+			}
+		}
+	}
+
+	u8 value{ 0 };
+	for (int y = 29; y >= 0; --y) { // Each Scanline
+		for (int x = 0; x < 32; ++x) { // Each Pixel
+			value = _nametable[(30 - y) * 32 + x];
+			assert((x * y) < 940);
+			print_nametable_hex_value(value, 18, 161, 1, x, 30 - y, 0x00FFFFFF, 0, 0);
+		}
+	}
+
+	// Colour Palette
+	u8 offset{ 0 };
+	for (int x{ 0 }; x < 32; ++x) {
+		if (x % 4 == 0) ++offset;
+
+		u8 pixel = _palette[x];
+		u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
+
+		for (int h = 0; h < 3 * RENDER_SCALE_MULTIPLIER; ++h) {
+			for (int w = 0; w < 3 * RENDER_SCALE_MULTIPLIER; ++w) {
+				_frame.pixels[256 * RENDER_SCALE_MULTIPLIER + (((132 * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + (x * 3 * RENDER_SCALE_MULTIPLIER) + w + (offset * RENDER_SCALE_MULTIPLIER * 3)] = pixel_colour;
+			}
+		}
+	}
+
+	// HEX Value
+
+	//++_count;
+	//if (_count == 8) _count = 0;
+	//
+	//print_hex_value(16, 18, 150, 2, 0, 0x00FFFFFF, 0x00000000, 0);
+	//print_status_value(_count, 18, 150, 2, 1, 0x00FFFFFF, 0x00000000, 0);
+	//print_status_value(_count, 18, 154, 2, 1, 0x00FFFFFF, 0x00000000, 0); // 4x pixel size due to multiplier
+	//print_status_value(_count, 18, 150, 2, 2, 0x00FFFF00, 0x00007878, 0);
+
+	// Status Values
+
+	print_cpu_status();
+
+	print_acuumulator();
+	print_x_register();
+	print_y_register();
+	print_stack_pointer();
+	print_program_counter();
+
+#endif // SCREEN_TEST
+
+	// Render Next Frame
+	InvalidateRect(window, NULL, FALSE);
+	UpdateWindow(window);
+
+	_ppu_instance->_frame_scan_complete = false;
+	_dispatched = false;
+}
+
 // Subsystem Windows: Entry Point
 int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
@@ -321,99 +424,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 				is_running &= (msg.message != WM_QUIT); // If a quit signal is not sent, the loop will continue
 			}
 
-			// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
-			//for (int i = 0; i < 1000; ++i) {
-			//}
-			_nes_instance.clock();
-
-			// TODO: Display status of all registers on the window
-
-			// Get Sprites/Tiles, Palettes for debug purposes
-			_table1 = _ppu_instance->get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
-			_table2 = _ppu_instance->get_pattern_table(1, 3); // is it working properly?
-			_palette = _ppu_instance->get_palette();
-			_nametable = _ppu_instance->get_nametable();
+			if (!_dispatched) {
+				_dispatched = true;
+				_nes = std::async(std::launch::async ,update_frame);
+			}
 
 			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
-
-#if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
-			static unsigned int p = 0;
-			if ((_frame.width * _frame.height * RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER) >= (SCREEN_WIDTH*SCREEN_HEIGHT*RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER)) { // to fix error on minimize
-				_frame.pixels[(p++) % (_frame.width * _frame.height)] = (rand() << 16) | (rand() << 8) | rand();
-				_frame.pixels[((rand() << 16) | (rand() << 8) | rand()) % (_frame.width * _frame.height)] = 0;
-			}
-#else
-			
-			// Tables
-			for (int y = 127; y >= 0; --y) { // Each Scanline
-				for (int x = 0; x < 128; ++x) { // Each Pixel
-					u8 pixel1 = _table1[127-y][x];
-					u8 pixel2 = _table2[127-y][x];
-					u32 pixel_colour1 = (_pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].red << 16) | (_pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].green << 8) | _pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].blue;
-					u32 pixel_colour2 = (_pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].red << 16) | (_pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].green << 8) | _pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].blue;
-
-					// So that it doesn't overwrite some other memory or worse, crash the program:
-					//assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height)); 
-
-					for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
-						for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
-							_frame.pixels[ 256 * RENDER_SCALE_MULTIPLIER + (((y * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + w] = pixel_colour1;
-							_frame.pixels[ 256 * RENDER_SCALE_MULTIPLIER + (((y * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + ((x + 128) * RENDER_SCALE_MULTIPLIER) + w] = pixel_colour2;
-						}
-					}
-				}
-			}
-
-			u8 value{ 0 };
-			for (int y = 29; y >= 0; --y) { // Each Scanline
-				for (int x = 0; x < 32; ++x) { // Each Pixel
-					value = _nametable[(30 - y) * 32 + x];
-					assert((x*y)<940);
-					print_nametable_hex_value(value, 18, 161, 1, x, 30 - y, 0x00FFFFFF, 0, 0);
-				}
-			}
-			
-			// Colour Palette
-			u8 offset{ 0 };
-			for (int x{ 0 }; x < 32; ++x) {
-				if (x % 4 == 0) ++offset;
-
-				u8 pixel = _palette[x];
-				u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
-
-				for (int h = 0; h < 3*RENDER_SCALE_MULTIPLIER; ++h) {
-					for (int w = 0; w < 3*RENDER_SCALE_MULTIPLIER; ++w) {
-						_frame.pixels[ 256 * RENDER_SCALE_MULTIPLIER + (((132 * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + (x * 3 * RENDER_SCALE_MULTIPLIER) + w + (offset * RENDER_SCALE_MULTIPLIER * 3)] = pixel_colour;
-					}
-				}
-			}
-
-			// HEX Value
-
-			//++_count;
-			//if (_count == 8) _count = 0;
-			//
-			//print_hex_value(16, 18, 150, 2, 0, 0x00FFFFFF, 0x00000000, 0);
-			//print_status_value(_count, 18, 150, 2, 1, 0x00FFFFFF, 0x00000000, 0);
-			//print_status_value(_count, 18, 154, 2, 1, 0x00FFFFFF, 0x00000000, 0); // 4x pixel size due to multiplier
-			//print_status_value(_count, 18, 150, 2, 2, 0x00FFFF00, 0x00007878, 0);
-
-			// Status Values
-			
-			print_cpu_status();
-			
-			print_acuumulator();
-			print_x_register();
-			print_y_register();
-			print_stack_pointer();
-			print_program_counter();
-			
-
-#endif // SCREEN_TEST
-
-			// Render Next Frame
-			InvalidateRect(window, NULL, FALSE);
-			UpdateWindow(window);
 
 			// TODO: find how to update the window title
 			

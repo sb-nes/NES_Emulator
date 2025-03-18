@@ -58,6 +58,12 @@ namespace NES::Cartridge {
 		std::vector<u8>				_program_memory; // PRG-ROM
 		std::vector<u8>				_character_memory; // CHR-ROM | CHR Memory | Pattern Memory
 
+		// CHR-ROM/CHR-RAM - $0000-$1FFF -> from the card, using Bank Switching
+		// Contains Pattern Table -> Sprites -> 8192 bytes broken into 2 tables
+		// Each tile is broken into 2 bitplanes
+		// Table 1 -> foreground elements
+		// Table 2 -> background elements
+
 		u8							_mapper_id{ 0 }; // which mapper currently in use
 		std::shared_ptr<Mapper>		_mapper;
 

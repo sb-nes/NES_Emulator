@@ -8,7 +8,7 @@
 #define SCREEN_HEIGHT 280
 #define NTSC_SCREEN_HEIGHT 262
 #define PAL_SCREEN_HEIGHT 312
-#define RENDER_SCALE_MULTIPLIER 1
+#define RENDER_SCALE_MULTIPLIER 2
 
 #define WINDOWS_GDI 1
 #define GLFW 1
@@ -114,13 +114,13 @@ const std::vector<sprite_tile> _hex_table{
 		{
 			{
 				{ 0,0,0,0,0,0,0,0 },
-				{ 0,1,1,1,1,1,1,0 },
+				{ 0,0,1,1,1,1,0,0 },
 				{ 0,1,1,0,0,0,1,0 },
 				{ 0,1,0,1,0,0,1,0 },
 				{ 0,1,0,1,1,0,1,0 },
 				{ 0,1,0,0,1,0,1,0 },
 				{ 0,1,0,0,0,1,1,0 },
-				{ 0,1,1,1,1,1,1,0 },
+				{ 0,0,1,1,1,1,0,0 },
 			}
 		}, // 0
 		{

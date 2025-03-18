@@ -15,6 +15,7 @@ namespace NES::PPU { // Picture Processing Unit
 	class R2C02 {
 	public:
 		bool		_nmi_trigger{ false };
+		bool		_frame_scan_complete{ false };
 
 		R2C02() { }
 
@@ -85,7 +86,6 @@ namespace NES::PPU { // Picture Processing Unit
 		s16			_scanline{ 0 };
 		s16			_cycle{ 0 };
 
-		bool		_frame_scan_complete{ false };
 
 		union {
 			struct
