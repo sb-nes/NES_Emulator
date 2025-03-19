@@ -335,6 +335,7 @@ void update_frame() {
 		}
 	}
 
+#if NAMETABLE_TEST
 	// Nametable
 	u8 value{ 0 };
 	for (int y = 0; y < 30; ++y) { // Each Scanline
@@ -345,6 +346,31 @@ void update_frame() {
 			print_hex_value(value & 0x0F, 0, 0, 1, 0x00FFFFFF, 0, x * 2, y * 2); // Hi Hex
 		}
 	}
+#elif NAMETABLE_PRINT_TEST
+	u8 value{ 0 };
+	for (int j = 0; j < 30; ++j) { // Each Scanline
+		for (int i = 0; i < 32; ++i) { // Each Pixel
+			value = _nametable[(29 - j) * 32 + i];
+			u32 _tablex = (value & 0x0F) * 8;
+			u32 _tabley = ((value >> 4) & 0x0F) * 8 + 7;
+			for (int y{ 0 }; y < 8; ++y) {
+				for (int x{ 0 }; x < 8; ++x) {
+					u8 pixel = _table1[_tabley - y][_tablex + x];
+					u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
+
+					u32 x_temp = (i * 8 + x) * RENDER_SCALE_MULTIPLIER;
+					u32 y_temp = (j * 8 + y) * RENDER_SCALE_MULTIPLIER;
+
+					for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
+						for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
+							_frame.pixels[(y_temp + h) * _frame.width + x_temp + w] = pixel_colour;
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
 
 	// Colour Palette
 	u8 offset{ 0 };

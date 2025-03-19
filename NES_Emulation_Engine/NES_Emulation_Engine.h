@@ -41,7 +41,7 @@ const std::array<std::array<NES_Colour, 16>, 4> _pal_colour_lookup{ // Row-Major
 				{"Green4",0,91,0},
 				{"Emerald4",0,89,0},
 				{"Teal4",0,73,78},
-				{"Blacker Than Black",0,0,0},
+				{"Infra-Black",0,0,0},
 				{"Black",0,0,0},
 				{"Black",0,0,0}
 			}

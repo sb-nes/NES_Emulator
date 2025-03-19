@@ -63,7 +63,8 @@ namespace NES::PPU {
 		// [0,1,2,3] - Background Palettes | [4,5,6,7] - Foreground Palettes
 
 		u8												_palette_RAM[32];
-		u8												_vRAM[2][1024]; // $2000-$2FFF -> VRAM -> 2KB -> Nametable Memory | Mirrors of _VRAM -> $3000-$3EFF | 
+		u8												_vRAM[2][1024]; // [Nametable + Attribute Table] x2
+		// $2000-$2FFF -> VRAM -> 2KB -> Nametable Memory | Mirrors of _VRAM -> $3000-$3EFF | 
 		std::shared_ptr<NES::Cartridge::GameCard>		_card;
 
 		// Object Attribute Memory [OAM]

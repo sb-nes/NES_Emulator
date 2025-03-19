@@ -44,7 +44,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 
 			case 0x0007: // PPUDATA -> [Picture Processing Unit] Memory Data
 				write(_address_abs, data);
-				++_address_abs;
+				_address_abs += _ctrl_register.increment_mode ? 32 : 1;
 			break; 
 
 			default:
@@ -83,7 +83,6 @@ namespace NES::PPU { // [Picture Processing Unit]
 				_ppu_read_buffer = read(_address_abs);
 
 				if (_address_abs >= 0x3F00) data = _ppu_read_buffer;
-				//++_address_abs;
 				_address_abs += _ctrl_register.increment_mode ? 32 : 1;
 			break;
 

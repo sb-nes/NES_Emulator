@@ -83,6 +83,9 @@ namespace NES::PPU { // Picture Processing Unit
 		s16			_scanline{ 0 };
 		s16			_cycle{ 0 };
 
+		union  {
+
+		};
 
 		union {
 			struct
