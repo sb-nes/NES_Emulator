@@ -26,23 +26,23 @@ namespace NES::PPU {
 		bool result{ false };
 		switch (chip_select(address)) {
 			case 0: // $0000-1FFF -> Cartridge CHR-ROM/RAM -> Pattern Table
-				result = _card->ppu_read(address, _data);
+				result = _card->ppu_read(address, data);
 				assert(result); // should never fail
 			break;
 
 			case 1:
 				address &= 0x0FFF;
 				if (_card->_mirror == Cartridge::GameCard::Mirror::VERTICAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0x03FF + (address & 0x03FF)];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0000 && address <= 0x03FF) _vRAM[0][address & 0x03FF] = data;
+					if (address >= 0x0400 && address <= 0x07FF) _vRAM[1][address & 0x03FF] = data;
+					if (address >= 0x0800 && address <= 0x0BFF) _vRAM[0][address & 0x03FF] = data;
+					if (address >= 0x0C00 && address <= 0x0FFF) _vRAM[1][address & 0x03FF] = data;
 				}
 				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0000 && address <= 0x03FF) _vRAM[0][address & 0x03FF] = data;
+					if (address >= 0x0400 && address <= 0x07FF) _vRAM[0][address & 0x03FF] = data;
+					if (address >= 0x0800 && address <= 0x0BFF) _vRAM[1][address & 0x03FF] = data;
+					if (address >= 0x0C00 && address <= 0x0FFF) _vRAM[1][address & 0x03FF] = data;
 				}
 			break;
 
@@ -50,16 +50,16 @@ namespace NES::PPU {
 				// temp
 				address &= 0x0FFF;
 				if (_card->_mirror == Cartridge::GameCard::Mirror::VERTICAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0x03FF + (address & 0x03FF)];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0000 && address <= 0x03FF) _vRAM[0][address & 0x03FF] = data;
+					if (address >= 0x0400 && address <= 0x07FF) _vRAM[1][address & 0x03FF] = data;
+					if (address >= 0x0800 && address <= 0x0BFF) _vRAM[0][address & 0x03FF] = data;
+					if (address >= 0x0C00 && address <= 0x0FFF) _vRAM[1][address & 0x03FF] = data;
 				}
 				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0000 && address <= 0x03FF) _vRAM[0][address & 0x03FF] = data ;
+					if (address >= 0x0400 && address <= 0x07FF) _vRAM[0][address & 0x03FF] = data ;
+					if (address >= 0x0800 && address <= 0x0BFF) _vRAM[1][address & 0x03FF] = data ;
+					if (address >= 0x0C00 && address <= 0x0FFF) _vRAM[1][address & 0x03FF] = data ;
 				}
 			break;
 
@@ -83,32 +83,32 @@ namespace NES::PPU {
 			case 1: // $2000-2FFF -> Nametable memory
 				address &= 0x0FFF;
 				if (_card->_mirror == Cartridge::GameCard::Mirror::VERTICAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0x03FF + (address & 0x03FF)];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[0][address & 0x03FF];
+					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[1][address & 0x03FF];
+					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0][address & 0x03FF];
+					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[1][address & 0x03FF];
 				}
 				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[0][address & 0x03FF];
+					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0][address & 0x03FF];
+					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[1][address & 0x03FF];
+					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[1][address & 0x03FF];
 				}
 				return _data;
 
 			case 2: // $3000-3EFF -> Unused Cartridge Space
 				address &= 0x0FFF;
 				if (_card->_mirror == Cartridge::GameCard::Mirror::VERTICAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0x03FF + (address & 0x03FF)];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[0][address & 0x03FF];
+					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[1][address & 0x03FF];
+					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0][address & 0x03FF];
+					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[1][address & 0x03FF];
 				}
 				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
-					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[address & 0x03FF];
-					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
-					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[0x03FF + (address & 0x03FF)];
+					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[0][address & 0x03FF];
+					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0][address & 0x03FF];
+					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[1][address & 0x03FF];
+					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[1][address & 0x03FF];
 				}
 			break;
 

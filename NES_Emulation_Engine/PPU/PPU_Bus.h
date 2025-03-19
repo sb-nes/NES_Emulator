@@ -25,6 +25,14 @@ namespace NES::PPU {
 			return palette;
 		}
 
+		nametable get_nametable(u8 nametable_idx) {
+			nametable table{};
+			for (int i{ 0 }; i < 1024; ++i) {
+				table[i] = _vRAM[nametable_idx][i];
+			}
+			return table;
+		}
+
 		void reset() {
 #if PALETTE_TEST
 			for (int i{ 0 }; i < 32; i) {
@@ -44,7 +52,6 @@ namespace NES::PPU {
 		[[nodiscard]] u8 read(u16 address, bool bReadOnly = false);
 
 		u8* get_palette_ram() { return _palette_RAM; }
-		u8* get_nametable() { return _vRAM; }
 		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) { _card = card; }
 
 	private:
@@ -56,7 +63,7 @@ namespace NES::PPU {
 		// [0,1,2,3] - Background Palettes | [4,5,6,7] - Foreground Palettes
 
 		u8												_palette_RAM[32];
-		u8												_vRAM[2*1024]; // $2000-$2FFF -> VRAM -> 2KB -> Nametable Memory | Mirrors of _VRAM -> $3000-$3EFF | 
+		u8												_vRAM[2][1024]; // $2000-$2FFF -> VRAM -> 2KB -> Nametable Memory | Mirrors of _VRAM -> $3000-$3EFF | 
 		std::shared_ptr<NES::Cartridge::GameCard>		_card;
 
 		// Object Attribute Memory [OAM]

@@ -84,13 +84,6 @@ namespace NES::CPU {
 		// I/O Hardware
 		NES::PPU::R2C02								_ppu{};
 		NES::Memory::RAM							_ram{};
-
-		// 2KB of RAM
-		u8											_cpuRam[2048];
-		// Controllers
-		u8											_controller[2];
-		// Internal cache of controller state
-		u8											_controller_state[2];
 	};
 
 } // NES CPU

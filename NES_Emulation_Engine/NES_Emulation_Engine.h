@@ -9,11 +9,12 @@
 #define NTSC_SCREEN_HEIGHT 262
 #define PAL_SCREEN_HEIGHT 312
 #define RENDER_SCALE_MULTIPLIER 2
+// Render Scale 4 will have wrapping issues if the maximum window size due to screen resolution is limited [1920x1080]
 
 #define WINDOWS_GDI 1
 #define GLFW 1
 
-#define CONSOLE_DBG_OUT 0
+
 
 struct NES_Colour {
 	std::string				name{ "Black" };
@@ -140,13 +141,13 @@ const std::vector<sprite_tile> _hex_table{
 		{
 			{
 				{ 0,0,0,0,0,0,0,0 },
-				{ 0,0,1,1,1,1,0,0 },
-				{ 0,1,0,0,0,0,1,0 },
-				{ 0,0,0,0,0,0,1,0 },
-				{ 0,0,1,1,1,1,0,0 },
-				{ 0,1,0,0,0,0,0,0 },
-				{ 0,1,0,0,0,0,0,0 },
-				{ 0,1,1,1,1,1,1,0 },
+				{ 0,0,0,1,1,1,1,0 },
+				{ 0,0,1,0,0,0,0,1 },
+				{ 0,0,0,0,0,0,0,1 },
+				{ 0,0,0,1,1,1,1,0 },
+				{ 0,0,1,0,0,0,0,0 },
+				{ 0,0,1,0,0,0,0,0 },
+				{ 0,0,1,1,1,1,1,1 },
 			}
 		}, // 2
 		{

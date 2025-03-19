@@ -160,6 +160,11 @@ namespace NES::PPU { // [Picture Processing Unit]
 
 		return table;
 	}
+	
+	nametable R2C02::get_nametable(u8 nametable_idx) {
+		return _bus.get_nametable(nametable_idx);
+	}
+
 
 	palette R2C02::get_palette() {
 		return _bus.get_palette_data();

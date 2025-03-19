@@ -17,12 +17,20 @@ using namespace NES;
 
 // Platform Independant Code
 
+namespace {
+	u8 get_palette_ram_address(u8 address) {
+		address &= 0x1F;
+		if ((address & 0x03) == 0) return address & 0x0F;
+		else return address;
+	}
+} // anonymous namespace
+
 CPU::R6502					_nes_instance{};
 PPU::R2C02*					_ppu_instance{};
 pattern_table				_table1;
 pattern_table				_table2;
 palette						_palette;
-u8*							_nametable;
+nametable					_nametable;
 int							_count{ 0 };
 unsigned int				_tick{ 0 };
 bool						_dispatched{ false };
@@ -62,6 +70,8 @@ void destroyNES() {
 	std::cout << "NES Instance Terminated!\n\n";
 }
 
+
+
 // Platform Dependant Code
 
 #if _WIN64 & WINDOWS_GDI
@@ -81,9 +91,8 @@ void print_y_register();
 void print_stack_pointer();
 void print_program_counter();
 
-void print_status_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count = 0, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000 , int left = 10);
-void print_hex_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count = 0, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int left = 10);
-void print_nametable_hex_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count = 0, int line_count = 0, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int left = 10);
+void print_status_value(u8 value, int x_pos, int y_pos, u8 scale, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int char_index = 0, int line_index = 0);
+void print_hex_value(u8 value, int x_pos, int y_pos, u8 scale, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int char_index = 0, int line_index = 0);
 
 /// Window Code ///
 HWND window{ nullptr };
@@ -284,6 +293,7 @@ int init_frame() {
 	return 1;
 }
 
+// Clocks the CPU till the PPU is past v_blank and ready to display the output, then Update the Bitmap screen elements.
 void update_frame() {
 
 	// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
@@ -295,7 +305,7 @@ void update_frame() {
 	_table1 = _ppu_instance->get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
 	_table2 = _ppu_instance->get_pattern_table(1, 3); // is it working properly?
 	_palette = _ppu_instance->get_palette();
-	_nametable = _ppu_instance->get_nametable();
+	_nametable = _ppu_instance->get_nametable(0);
 
 #if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
 	static unsigned int p = 0;
@@ -307,7 +317,7 @@ void update_frame() {
 
 	std::lock_guard<std::mutex> lock(_nes_mutex);
 
-	// Tables
+	// Pattern Tables
 	for (int y = 127; y >= 0; --y) { // Each Scanline
 		for (int x = 0; x < 128; ++x) { // Each Pixel
 			u8 pixel1 = _table1[127 - y][x];
@@ -315,33 +325,33 @@ void update_frame() {
 			u32 pixel_colour1 = (_pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].red << 16) | (_pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].green << 8) | _pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].blue;
 			u32 pixel_colour2 = (_pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].red << 16) | (_pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].green << 8) | _pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].blue;
 
-			// So that it doesn't overwrite some other memory or worse, crash the program:
-			//assert((((y * RENDER_SCALE_MULTIPLIER) + 1) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + 1 <= (_frame.width * _frame.height)); 
-
+			// if it goes past width * height, it overwrite some other memory or worse, crash the program!
 			for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
 				for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
-					_frame.pixels[256 * RENDER_SCALE_MULTIPLIER + (((y * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + (x * RENDER_SCALE_MULTIPLIER) + w] = pixel_colour1;
-					_frame.pixels[256 * RENDER_SCALE_MULTIPLIER + (((y * RENDER_SCALE_MULTIPLIER) + h) * _frame.width) + ((x + 128) * RENDER_SCALE_MULTIPLIER) + w] = pixel_colour2;
+					_frame.pixels[(y * RENDER_SCALE_MULTIPLIER + h) * _frame.width + (256 + x) * RENDER_SCALE_MULTIPLIER + w] = pixel_colour1;
+					_frame.pixels[(y * RENDER_SCALE_MULTIPLIER + h) * _frame.width + (384 + x) * RENDER_SCALE_MULTIPLIER + w] = pixel_colour2;
 				}
 			}
 		}
 	}
 
+	// Nametable
 	u8 value{ 0 };
-	for (int y = 29; y >= 0; --y) { // Each Scanline
+	for (int y = 0; y < 30; ++y) { // Each Scanline
 		for (int x = 0; x < 32; ++x) { // Each Pixel
-			value = _nametable[(30 - y) * 32 + x];
-			assert((x * y) < 940);
-			print_nametable_hex_value(value, 18, 161, 1, x, 30 - y, 0x00FFFFFF, 0, 0);
+			value = _nametable[(29 - y) * 32 + x];
+			print_hex_value(value & 0x0F, 0, 0, 1, 0x00FFFFFF, 0, x * 2 + 1 , y * 2); // Low Hex
+			value >>= 4;
+			print_hex_value(value & 0x0F, 0, 0, 1, 0x00FFFFFF, 0, x * 2, y * 2); // Hi Hex
 		}
 	}
 
 	// Colour Palette
 	u8 offset{ 0 };
-	for (int x{ 0 }; x < 32; ++x) {
+	for (u8 x{ 0 }; x < 32; ++x) {
 		if (x % 4 == 0) ++offset;
 
-		u8 pixel = _palette[x];
+		u8 pixel = _palette[get_palette_ram_address(x)];
 		u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
 
 		for (int h = 0; h < 3 * RENDER_SCALE_MULTIPLIER; ++h) {
@@ -351,18 +361,7 @@ void update_frame() {
 		}
 	}
 
-	// HEX Value
-
-	//++_count;
-	//if (_count == 8) _count = 0;
-	//
-	//print_hex_value(16, 18, 150, 2, 0, 0x00FFFFFF, 0x00000000, 0);
-	//print_status_value(_count, 18, 150, 2, 1, 0x00FFFFFF, 0x00000000, 0);
-	//print_status_value(_count, 18, 154, 2, 1, 0x00FFFFFF, 0x00000000, 0); // 4x pixel size due to multiplier
-	//print_status_value(_count, 18, 150, 2, 2, 0x00FFFF00, 0x00007878, 0);
-
 	// Status Values
-
 	print_cpu_status();
 
 	print_acuumulator();
@@ -371,7 +370,7 @@ void update_frame() {
 	print_stack_pointer();
 	print_program_counter();
 
-#endif // SCREEN_TEST
+#endif
 
 	// Render Next Frame
 	InvalidateRect(window, NULL, FALSE);
@@ -480,58 +479,56 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 	}
 }
 
-void print_status_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count, u32 colour, u32 bg_colour, int left) {
+void print_status_value(u8 value, int x_pos, int y_pos, u8 scale, u32 colour, u32 bg_colour, int char_index, int line_index) {
 	for (int y{ y_pos }; y < y_pos + 8; ++y) {
 		for (int x{ x_pos }; x < x_pos + 8; ++x) {
 			u8 pixel = _status_value_table[value][y_pos + 7 - y][x - x_pos];
 			u32 pixel_colour = pixel > 0 ? colour : bg_colour;
 
+			u32 x_temp = (char_index * 8 + x) * scale;
+			u32 y_temp = (line_index * 8 + y) * scale;
+
 			for (int h = 0; h < scale; ++h) {
 				for (int w = 0; w < scale; ++w) {
-					_frame.pixels[(((y_pos * RENDER_SCALE_MULTIPLIER) + (y - y_pos) * scale + h) * _frame.width) + (left + ((8 * value_count) * scale)) + (x - x_pos) * scale + w] = pixel_colour;
+					_frame.pixels[(y_temp + h) * _frame.width + x_temp + w] = pixel_colour;
 				}
 			}
 		}
 	}
 }
 
-void print_hex_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count, u32 colour, u32 bg_colour, int left) {
+void print_hex_value(u8 value, int x_pos, int y_pos, u8 scale, u32 colour, u32 bg_colour, int char_index, int line_index) {
 	for (int y{ y_pos }; y < y_pos + 8; ++y) {
 		for (int x{ x_pos }; x < x_pos + 8; ++x) {
 			u8 pixel = _hex_table[value][y_pos + 7 - y][x - x_pos];
 			u32 pixel_colour = pixel > 0 ? colour : bg_colour;
 
+			u32 x_temp = (char_index * 8 + x) * scale;
+			u32 y_temp = (line_index * 8 + y) * scale;
+
 			for (int h = 0; h < scale; ++h) {
 				for (int w = 0; w < scale; ++w) {
-					_frame.pixels[(((y_pos * RENDER_SCALE_MULTIPLIER) + (y - y_pos) * scale + h) * _frame.width) + (left + ((8 * value_count) * scale)) + (x - x_pos) * scale + w] = pixel_colour;
+					_frame.pixels[(y_temp + h) * _frame.width + x_temp + w] = pixel_colour;
 				}
 			}
 		}
 	}
 }
 
-void print_nametable_hex_value(u8 value, int x_pos, int y_pos, u8 scale, int value_count, int line_count, u32 colour, u32 bg_colour, int left) {
-	for (int y{ 0 }; y < 8; ++y) {
-		for (int x{ 0 }; x < 8; ++x) {
-			u8 pixel = _hex_table[value][7 - y][x];
-			u32 pixel_colour = pixel > 0 ? colour : bg_colour;
-
-			_frame.pixels[(((7 * line_count) + (y * scale)) * _frame.width) + (left + ((8 * value_count) * scale)) + x * scale] = pixel_colour;
-		}
-	}
-}
+#ifndef CPU_STATUS_PRINT_OFFSET
+#define CPU_STATUS_PRINT_OFFSET 256
 
 void print_cpu_status() {
 	u8 stats = _nes_instance.get_status_register();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 171, RENDER_SCALE_MULTIPLIER, 0, 0x00FFFF00, 0x00007878, 384 * RENDER_SCALE_MULTIPLIER);
+	print_hex_value(16, CPU_STATUS_PRINT_OFFSET, 171, RENDER_SCALE_MULTIPLIER, 0x00FFFF00, 0x00007878, 0);
 	
 	for (int i{ 0 }; i < 8; ++i) {
 		flag_value = stats & 0x01;
 		stats >>= 1;
 		flag_value = flag_value ? 0x0000FF00 : 0x00FF0000;
-		print_status_value(i, 18, 171, RENDER_SCALE_MULTIPLIER, 8-i, 0x00000000, flag_value, 384 * RENDER_SCALE_MULTIPLIER);
+		print_status_value(i, CPU_STATUS_PRINT_OFFSET, 171, RENDER_SCALE_MULTIPLIER, 0x00000000, flag_value, 8-i);
 	}
 }
 
@@ -539,12 +536,12 @@ void print_acuumulator() {
 	u8 stats = _nes_instance.get_accumulator();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 161, RENDER_SCALE_MULTIPLIER, 0, 0x00FFFF00, 0x00007878, 384 * RENDER_SCALE_MULTIPLIER);
+	print_hex_value(16, CPU_STATUS_PRINT_OFFSET, 163, RENDER_SCALE_MULTIPLIER, 0x00FFFF00, 0x00007878, 0);
 
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 161, RENDER_SCALE_MULTIPLIER, 2-i, 0x00FFFFFF, 0, 384 * RENDER_SCALE_MULTIPLIER);
+		print_hex_value(flag_value, CPU_STATUS_PRINT_OFFSET, 163, RENDER_SCALE_MULTIPLIER, 0x00FFFFFF, 0, 2-i);
 	}
 }
 
@@ -552,12 +549,12 @@ void print_x_register() {
 	u8 stats = _nes_instance.get_x_register();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 161, RENDER_SCALE_MULTIPLIER, 4, 0x00FFFF00, 0x00007878, 384 * RENDER_SCALE_MULTIPLIER);
+	print_hex_value(16, CPU_STATUS_PRINT_OFFSET, 163, RENDER_SCALE_MULTIPLIER, 0x00FFFF00, 0x00007878, 4);
 
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 161, RENDER_SCALE_MULTIPLIER, 6-i, 0x00FFFFFF, 0, 384 * RENDER_SCALE_MULTIPLIER);
+		print_hex_value(flag_value, CPU_STATUS_PRINT_OFFSET, 163, RENDER_SCALE_MULTIPLIER, 0x00FFFFFF, 0, 6-i);
 	}
 }
 
@@ -565,12 +562,12 @@ void print_y_register() {
 	u8 stats = _nes_instance.get_y_register();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 161, RENDER_SCALE_MULTIPLIER, 8, 0x00FFFF00, 0x00007878, 384 * RENDER_SCALE_MULTIPLIER);
+	print_hex_value(16, CPU_STATUS_PRINT_OFFSET, 163, RENDER_SCALE_MULTIPLIER, 0x00FFFF00, 0x00007878, 8);
 
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 161, RENDER_SCALE_MULTIPLIER, 10-i, 0x00FFFFFF, 0, 384 * RENDER_SCALE_MULTIPLIER);
+		print_hex_value(flag_value, CPU_STATUS_PRINT_OFFSET, 163, RENDER_SCALE_MULTIPLIER, 0x00FFFFFF, 0, 10-i);
 	}
 }
 
@@ -578,12 +575,12 @@ void print_stack_pointer() {
 	u8 stats = _nes_instance.get_stack_pointer();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 151, RENDER_SCALE_MULTIPLIER, 0, 0x00FFFF00, 0x00007878, 384 * RENDER_SCALE_MULTIPLIER);
+	print_hex_value(16, CPU_STATUS_PRINT_OFFSET, 155, RENDER_SCALE_MULTIPLIER, 0x00FFFF00, 0x00007878, 0);
 
 	for (int i{ 0 }; i < 2; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 151, RENDER_SCALE_MULTIPLIER, 2 - i, 0x00FFFFFF, 0, 384 * RENDER_SCALE_MULTIPLIER);
+		print_hex_value(flag_value, CPU_STATUS_PRINT_OFFSET, 155, RENDER_SCALE_MULTIPLIER, 0x00FFFFFF, 0, 2 - i);
 	}
 }
 
@@ -591,14 +588,17 @@ void print_program_counter() {
 	u16 stats = _nes_instance.get_program_counter();
 	u32 flag_value = 0;
 
-	print_hex_value(16, 18, 151, RENDER_SCALE_MULTIPLIER, 4, 0x00FFFF00, 0x00007878, 384 * RENDER_SCALE_MULTIPLIER);
+	print_hex_value(16, CPU_STATUS_PRINT_OFFSET, 155, RENDER_SCALE_MULTIPLIER, 0x00FFFF00, 0x00007878, 4);
 
 	for (int i{ 0 }; i < 4; ++i) {
 		flag_value = stats & 0x0F;
 		stats >>= 4;
-		print_hex_value(flag_value, 18, 151, RENDER_SCALE_MULTIPLIER, 8 - i, 0x00FFFFFF, 0, 384 * RENDER_SCALE_MULTIPLIER);
+		print_hex_value(flag_value, CPU_STATUS_PRINT_OFFSET, 155, RENDER_SCALE_MULTIPLIER, 0x00FFFFFF, 0, 8 - i);
 	}
 }
+
+#undef CPU_STATUS_PRINT_OFFSET
+#endif // !CPU_STATUS PRINT_OFFSET
 
 void attach_console() {
 	// create a separate new console window
