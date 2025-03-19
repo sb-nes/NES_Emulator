@@ -18,6 +18,8 @@ namespace NES::PPU { // [Picture Processing Unit]
 		switch (get_cpu_address(address)) {
 			case 0x0000: // PPUCTRL -> Control
 				_ctrl_register.value = data; 
+				_inc_address.nametable_x = _ctrl_register.nametable_select_x;
+				_inc_address.nametable_y = _ctrl_register.nametable_select_y;
 			break; 
 
 			case 0x0001: // PPUMASK -> Mask
@@ -25,26 +27,38 @@ namespace NES::PPU { // [Picture Processing Unit]
 			break; 
 
 			case 0x0002: // PPUSTATUS -> Status
+				// Read-Only
 			break; 
 
 			case 0x0003: break; // OAMADDR -> [Object Attribute Memory] OAM address
 			case 0x0004: break; // OAMDATA -> [Object Attribute Memory] OAM data
-			case 0x0005: break; // PPUSCROLL -> Scroll
+
+			case 0x0005: // PPUSCROLL -> Scroll
+				if (_address_latch == 0) {
+					_fine_x = data & 0x07;
+					_inc_address.coarse_x = data >> 3;
+					_address_latch = 1;
+				} else {
+					_inc_address.fine_y = data & 0x07;
+					_inc_address.coarse_y = data >> 3;
+					_address_latch = 0;
+				}
+			break; 
 
 			case 0x0006: // PPUADDR -> [Picture Processing Unit] Memory Address
 				if (_address_latch == 0) { // store high address
-					_address_inc = (_address_inc & 0x00FF) | ((data & 0x3F) << 8);
+					_inc_address.value = (_inc_address.value & 0x00FF) | ((data & 0x3F) << 8);
 					_address_latch = 1;
 				} else { // store low address
-					_address_inc = (_address_inc & 0xFF00) | data;
-					_address_abs = _address_inc;
+					_inc_address.value = (_inc_address.value & 0xFF00) | data;
+					_vram_address = _inc_address;
 					_address_latch = 0;
 				}
 			break; 
 
 			case 0x0007: // PPUDATA -> [Picture Processing Unit] Memory Data
-				write(_address_abs, data);
-				_address_abs += _ctrl_register.increment_mode ? 32 : 1;
+				write(_vram_address.value, data);
+				_vram_address.value += _ctrl_register.increment_mode ? 32 : 1;
 			break; 
 
 			default:
@@ -80,10 +94,10 @@ namespace NES::PPU { // [Picture Processing Unit]
 
 			case 0x0007: // PPUDATA -> [Picture Processing Unit] Memory Data
 				data = _ppu_read_buffer; // PPU bus reads are too slow and cannot complete in time to service the CPU read. Thus, it has an internal buffer for storing data to be delivered later.
-				_ppu_read_buffer = read(_address_abs);
+				_ppu_read_buffer = read(_vram_address.value);
 
-				if (_address_abs >= 0x3F00) data = _ppu_read_buffer;
-				_address_abs += _ctrl_register.increment_mode ? 32 : 1;
+				if (_vram_address.value >= 0x3F00) data = _ppu_read_buffer;
+				_vram_address.value += _ctrl_register.increment_mode ? 32 : 1;
 			break;
 
 			default:
@@ -164,9 +178,11 @@ namespace NES::PPU { // [Picture Processing Unit]
 		return _bus.get_nametable(nametable_idx);
 	}
 
-
 	palette R2C02::get_palette() {
 		return _bus.get_palette_data();
 	}
 
+	display R2C02::get_render_screen() {
+		return _display;
+	}
 }

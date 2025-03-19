@@ -12,5 +12,6 @@ using s16 = int16_t;
 using sprite_tile = std::vector<std::vector<u8>>;
 using pattern_table = std::vector<std::vector<u8>>;
 using nametable = std::array<u8, 1024>; // takes up 1kB
+using display = std::array<std::array<u8, 256>, 240>; // takes up 1kB
 
 using palette = std::array<u8, 32>;

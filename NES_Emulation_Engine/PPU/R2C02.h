@@ -32,19 +32,160 @@ namespace NES::PPU { // Picture Processing Unit
 		[[nodiscard]] pattern_table get_pattern_table(u8 pattern_table_idx, u8 palette_idx);
 		[[nodiscard]] nametable get_nametable(u8 nametable_idx);
 		[[nodiscard]] palette get_palette();
+		[[nodiscard]] display get_render_screen();
 
 		bool clock() {
 			// Clock function of the PPU
 
 			// TODO: implement rendering here
 
-			if (_scanline == -1 && _cycle == 1) {
-				_status_register.v_blank = 0;
+			auto IncrementScrollX = [&]() {
+				if (_mask_register.background_enable || _mask_register.sprite_enable) {
+					if (_vram_address.coarse_x == 31) { // End of Nametable
+						_vram_address.coarse_x = 0;
+						_vram_address.nametable_x = ~_vram_address.nametable_x; // but why flip?
+					} else {
+						++_vram_address.coarse_x;
+					}
+				}
+			};
+
+			auto IncrementScrollY = [&]() {
+				if (_mask_register.background_enable || _mask_register.sprite_enable) {
+					if (_vram_address.fine_y < 7) {
+						++_vram_address.fine_y;
+					} else {
+						_vram_address.fine_y = 0;
+
+						if (_vram_address.coarse_y == 29) { // End of Nametable
+							_vram_address.coarse_y = 0;
+							_vram_address.nametable_y = ~_vram_address.nametable_y; // again, why flip?
+						} else if (_vram_address.coarse_y == 31) { // Attribute Mem. just in case
+							_vram_address.coarse_y = 0;
+						} else {
+							++_vram_address.coarse_y;
+						}
+					}
+				}
+			};
+
+			auto ResetAddressX = [&]() {
+				if (_mask_register.background_enable || _mask_register.sprite_enable) {
+					_vram_address.nametable_x = _inc_address.nametable_x;
+					_vram_address.coarse_x = _inc_address.coarse_x;
+				}
+			};
+
+			auto ResetAddressY = [&]() {
+				if (_mask_register.background_enable || _mask_register.sprite_enable) {
+					_vram_address.nametable_y = _inc_address.nametable_y;
+					_vram_address.coarse_y = _inc_address.coarse_y;
+					_vram_address.fine_y = _inc_address.fine_y;
+				}
+			};
+
+			auto LoadBgShiftRegisters = [&]() { // Prepapres the registers
+
+				_pattern_table_low_byte_background = (_pattern_table_low_byte_background & 0xFF00) | _bitplane_lsb_background;
+				_pattern_table_high_byte_background = (_pattern_table_high_byte_background & 0xFF00) | _bitplane_msb_background;
+
+				_attribute_low_byte_background = (_attribute_low_byte_background & 0xFF00) | ((_attribute_background & 0b01) ? 0xFF : 0x00);
+				_attribute_high_byte_background = (_attribute_high_byte_background & 0xFF00) | ((_attribute_background & 0b10) ? 0xFF : 0x00);
+			};
+
+			auto UpdateShiftRegisters = [&]() {
+				if (_mask_register.background_enable) {
+					_pattern_table_low_byte_background <<= 1;
+					_pattern_table_high_byte_background <<= 1;
+
+					_attribute_low_byte_background <<= 1;
+					_attribute_high_byte_background <<= 1;
+				}
+			};
+
+			if (_scanline >= -1 && _scanline < 240) {
+
+				if (_scanline == -1 && _cycle == 1) { // Start of Scanline
+					_status_register.v_blank = 0;
+				}
+
+				if (_scanline == -1 && _cycle >= 280 && _cycle < 305) { // Where???
+					ResetAddressY();
+				}
+
+				if ((_cycle >= 2 && _cycle < 258) || (_cycle >= 321 && _cycle < 338)) {
+					UpdateShiftRegisters();
+
+					// extract tile id, attribute and bitmap patterns
+					switch ((_cycle - 1) % 8) {
+						case 0: // NT / Nametable Read
+							LoadBgShiftRegisters();
+							_nametable_background = read(_vram_address.value & 0x0FFF | 0x2000);
+						break;
+
+						case 2: // AT / Attribute table Read
+							// Simple Explanation: Using bit manipulation to divide coarse_y and coarse_x by 4, such that we can look at regions of '16x16' instead of 8x8 tiles
+							_attribute_background = read((_vram_address.value & 0x0C00) | ((_vram_address.coarse_y >> 2) << 3) | (_vram_address.coarse_x >> 2) | 0x23C0);
+
+							// Bottom-Right << 6 | Bottom-Left << 4 | Top-Right << 2 | Top-Left 
+							if (_vram_address.coarse_y & 0x02) _attribute_background >>= 4; // Top or Bottom
+							if (_vram_address.coarse_x & 0x02) _attribute_background >>= 2; // Left or Right
+							_attribute_background &= 0x03; // Only need the last two bits
+						break;
+
+						case 4:
+							_bitplane_lsb_background = read((_ctrl_register.background_tile_select << 12) + ((u16)_nametable_background << 4) + _vram_address.fine_y);
+						break;
+
+						case 6:
+							_bitplane_msb_background = read((_ctrl_register.background_tile_select << 12) + ((u16)_nametable_background << 4) + _vram_address.fine_y + 8);
+						break;
+
+						case 7:
+							IncrementScrollX();
+						break;
+
+						default: break;
+					}
+				}
+
+				if (_cycle == 256) { // End of Scanline
+					// Increment the loopy register in y direction
+					IncrementScrollY();
+				}
+
+				if (_cycle == 257) { // Somewhere
+					ResetAddressX();
+				}
 			}
 				
-			if (_scanline >= 241 && _cycle == 1) {
+			if (_scanline == 240) { // Post-render scanline
+				// Do Nothing RN
+			}
+
+			if (_scanline >= 241 && _cycle == 1) { // Vertical blanking lines
 				_status_register.v_blank = 1;
 				if (_ctrl_register.nmi_enable) _nmi_trigger = true;
+			}
+
+			u8 bg_pix{ 0x00 };
+			u8 bg_pal{ 0x00 };
+
+			if (_mask_register.background_enable) {
+				u16 bit_mux = 0x8000 >> _fine_x;
+
+				u8 p0_pixel = (_pattern_table_low_byte_background & bit_mux) > 0;
+				u8 p1_pixel = (_pattern_table_high_byte_background & bit_mux) > 0;
+				bg_pix = (p1_pixel << 1) | p0_pixel;
+
+				u8 p0_palette = (_attribute_low_byte_background & bit_mux) > 0;
+				u8 p1_palette = (_attribute_high_byte_background & bit_mux) > 0;
+				bg_pal = (p1_palette << 1) | p0_palette;
+			}
+
+			// set pixel
+			if (_scanline >= 0 && _scanline < 240 && _cycle > 0 && _cycle <= 256) {
+				_display[_scanline][_cycle - 1] = _bus.read_palette_colour(bg_pal, bg_pix);
 			}
 
 			++_cycle; // Works like a scanline across the screen of the CRT
@@ -64,8 +205,8 @@ namespace NES::PPU { // Picture Processing Unit
 			_status_register.value = 0x00;
 			_mask_register.value = 0x00;
 			_ctrl_register.value = 0x00;
-			_address_abs = 0x0000;
-			_address_inc = 0x0000;
+			_inc_address.value = 0x0000;
+			_vram_address.value = 0x0000;
 		}
 
 		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) {
@@ -73,19 +214,48 @@ namespace NES::PPU { // Picture Processing Unit
 		}
 
 	private:
-		PPU_Bus		_bus{};
 
-		u8			_address_latch{ 0x00 }; // writing to the Low byte or the High byte
-		u8			_ppu_read_buffer{ 0x00 }; // since, reading data from ppu is delayed by 1 cycle
+		// defined by loopy | original src - unknown?
+		union address_register {
+			struct {
+				u16 coarse_x : 5;
+				u16 coarse_y : 5;
+				u16 nametable_x : 1;
+				u16 nametable_y : 1;
+				u16 fine_y : 3;
+				u16 unused : 1;
+			};
 
-		u16			_address_abs{ 0x0000 };
-		u16			_address_inc{ 0x0000 };
-		s16			_scanline{ 0 };
-		s16			_cycle{ 0 };
-
-		union  {
-
+			u16 value = 0x0000;
 		};
+		
+		PPU_Bus					_bus{};
+
+		u8						_address_latch{ 0x00 }; // writing to the Low byte or the High byte
+		u8						_ppu_read_buffer{ 0x00 }; // since, reading data from ppu is delayed by 1 cycle
+
+		u16						_address_internal{ 0x0000 };
+		//u16					_address_inc{ 0x0000 };
+		s16						_scanline{ 0 };
+		s16						_cycle{ 0 };
+
+		u8						_fine_x{ 0x00 };
+		address_register		_vram_address;
+		address_register		_inc_address;
+
+		u8						_nametable_background{ 0x00 };
+		u8						_attribute_background{ 0x00 };
+		u8						_bitplane_lsb_background{ 0x00 }; // for bit-planes?
+		u8						_bitplane_msb_background{ 0x00 }; // for bit-planes?
+
+		// 16-bit Shift Registers
+		u16						_pattern_table_low_byte_background{ 0x0000 };
+		u16						_pattern_table_high_byte_background{ 0x0000 };
+		u16						_attribute_low_byte_background{ 0x0000 };
+		u16						_attribute_high_byte_background{ 0x0000 };
+		// It is a mouthful, IK...
+
+		display					_display{};
 
 		union {
 			struct

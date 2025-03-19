@@ -27,6 +27,7 @@ namespace {
 
 CPU::R6502					_nes_instance{};
 PPU::R2C02*					_ppu_instance{};
+display						_display;
 pattern_table				_table1;
 pattern_table				_table2;
 palette						_palette;
@@ -307,6 +308,8 @@ void update_frame() {
 	_palette = _ppu_instance->get_palette();
 	_nametable = _ppu_instance->get_nametable(0);
 
+	_display = _ppu_instance->get_render_screen();
+
 #if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
 	static unsigned int p = 0;
 	if ((_frame.width * _frame.height * RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER) >= (SCREEN_WIDTH * SCREEN_HEIGHT * RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER)) { // to fix error on minimize
@@ -366,6 +369,21 @@ void update_frame() {
 							_frame.pixels[(y_temp + h) * _frame.width + x_temp + w] = pixel_colour;
 						}
 					}
+				}
+			}
+		}
+	}
+#else
+	// Output Display
+	for (int y = 0; y < 240; ++y) { // Each Scanline
+		for (int x = 0; x < 256; ++x) { // Each Pixel
+			u8 pixel = _display[239 - y][x];
+			u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
+
+			// if it goes past width * height, it overwrite some other memory or worse, crash the program!
+			for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
+				for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
+					_frame.pixels[(y * RENDER_SCALE_MULTIPLIER + h) * _frame.width + x * RENDER_SCALE_MULTIPLIER + w] = pixel_colour;
 				}
 			}
 		}
