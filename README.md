@@ -13,7 +13,6 @@
 ![palette read 1](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu1.gif)
 
 There was an error in reading `pattern tables`, due to the way I implemented switching between different emulated address spaces. It is seen on the right/second pattern table, which should have shown no data at all.
-![palette read 2](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu2.gif)
 
 
 ~~Speed of the output using `GDI` is slower than expected due to using Software Rendering. I'll either have to optimise some other parts `[hard way]`, or use some other window api which includes Hardware Rendering`[easy and logical way]`.~~
