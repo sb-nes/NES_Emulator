@@ -5,9 +5,9 @@
 2. CPU/R-MOS-6502 - `Passed`
 3. Cartridge ROM Loading [.nes/ines 1.0] - `Passed`
 4. Mapper 0 - `Passed`
-5. PPU/R-MOS-2C02 - Testing
-6. Output Window - Testing
-7. Timing - Testing
+5. PPU/R-MOS-2C02 - Testing | Failing
+6. Output Window - Testing | Somehow Passing
+7. Timing - `Passed`
 
 
 ![palette read 1](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu1.gif)
@@ -24,6 +24,18 @@ The real reason the CPU and the whole application itself was slow because of `st
 
 
 ![pattern table output](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu3.gif)
+
+
+Why does it feel like I'm in **Conjuring**.
+![Unholy](https://github.com/sb-nes/NES_Emulator/blob/sane/images/SomethingWrong.png)
+
+
+I can't seem to figure out the root of this problem, but it *plagues* my soul away.
+![OnlyPipes](https://github.com/sb-nes/NES_Emulator/blob/sane/images/OnlyPipes.png)
+
+
+<ins>The timing seems to work, but i don't know for sure.</ins> I'll just say it passed and move on. Maybe Someday, I'll Visit This Part. 
+![Timing](https://github.com/sb-nes/NES_Emulator/blob/sane/images/FPSCounter.png)
 
 #### Credit to javidx9 [not a clone of his olc_nes project] for his basic overview explanation of the Nintendo Entertainment System, NesHacker for his in-depth explanations and all the people behind the NesDev Wiki Reference Guide for it's documentations.
 
