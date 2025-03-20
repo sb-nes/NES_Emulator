@@ -1,9 +1,10 @@
 // NES_Emulation_Engine.cpp : 'main' function -> Program Execution Entry Point.
 
 #include <iostream>
+#include <crtdbg.h>
 #include <thread>
 #include <future>
-#include <crtdbg.h>
+#include <chrono>
 
 #include "CPU/R6502.h"
 #include "NES_Emulation_Engine.h"
@@ -24,6 +25,7 @@ namespace {
 		else return address;
 	}
 } // anonymous namespace
+
 
 CPU::R6502					_nes_instance{};
 PPU::R2C02*					_ppu_instance{};
@@ -297,6 +299,8 @@ int init_frame() {
 // Clocks the CPU till the PPU is past v_blank and ready to display the output, then Update the Bitmap screen elements.
 void update_frame() {
 
+	FrameTimer timer;
+
 	// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
 	while (!_ppu_instance->_frame_scan_complete) {
 		_nes_instance.clock();
@@ -304,11 +308,9 @@ void update_frame() {
 
 	// Get Sprites/Tiles, Palettes for debug purposes
 	_table1 = _ppu_instance->get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
-	_table2 = _ppu_instance->get_pattern_table(1, 3); // is it working properly?
+	_table2 = _ppu_instance->get_pattern_table(1, 2); // is it working properly?
 	_palette = _ppu_instance->get_palette();
-	_nametable = _ppu_instance->get_nametable(0);
 
-	_display = _ppu_instance->get_render_screen();
 
 #if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
 	static unsigned int p = 0;
@@ -324,7 +326,7 @@ void update_frame() {
 	for (int y = 127; y >= 0; --y) { // Each Scanline
 		for (int x = 0; x < 128; ++x) { // Each Pixel
 			u8 pixel1 = _table1[127 - y][x];
-			u8 pixel2 = _table2[127 - y][x];
+			u8 pixel2 = _table2[127 - y][x]; // is there some unknown writing happening to pattern tables behind my back | or is it writing hi instead of lo
 			u32 pixel_colour1 = (_pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].red << 16) | (_pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].green << 8) | _pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].blue;
 			u32 pixel_colour2 = (_pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].red << 16) | (_pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].green << 8) | _pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].blue;
 
@@ -340,6 +342,7 @@ void update_frame() {
 
 #if NAMETABLE_TEST
 	// Nametable
+	_nametable = _ppu_instance->get_nametable(0);
 	u8 value{ 0 };
 	for (int y = 0; y < 30; ++y) { // Each Scanline
 		for (int x = 0; x < 32; ++x) { // Each Pixel
@@ -350,6 +353,7 @@ void update_frame() {
 		}
 	}
 #elif NAMETABLE_PRINT_TEST
+	_nametable = _ppu_instance->get_nametable(0);
 	u8 value{ 0 };
 	for (int j = 0; j < 30; ++j) { // Each Scanline
 		for (int i = 0; i < 32; ++i) { // Each Pixel
@@ -375,6 +379,7 @@ void update_frame() {
 	}
 #else
 	// Output Display
+	_display = _ppu_instance->get_render_screen();
 	for (int y = 0; y < 240; ++y) { // Each Scanline
 		for (int x = 0; x < 256; ++x) { // Each Pixel
 			u8 pixel = _display[239 - y][x];

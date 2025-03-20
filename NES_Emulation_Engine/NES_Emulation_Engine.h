@@ -11,10 +11,62 @@
 #define RENDER_SCALE_MULTIPLIER 2
 // Render Scale 4 will have wrapping issues if the maximum window size due to screen resolution is limited [1920x1080]
 
+#define CLOCK_TIME_IN_NANOSECONDS 1.f/1.79f
+#define FRAME_PER_SECOND 1.0f/60.0f
+#define FRAME_LIMIT 1
+
 #define WINDOWS_GDI 1
 #define GLFW 1
 
+int _frameCount{ 0 };
+float _avgTime;
+int _frames_per_sec{ 0 };
 
+struct FrameTimer { // Everything's public
+	std::chrono::time_point<std::chrono::steady_clock> start, end;
+	std::chrono::duration<float> duration;
+
+	FrameTimer() {
+		start = std::chrono::high_resolution_clock::now();
+	}
+
+	~FrameTimer() {
+		end = std::chrono::high_resolution_clock::now();
+		duration = end - start;
+
+#if FRAME_LIMIT
+		while (duration.count() < FRAME_PER_SECOND) {
+			end = std::chrono::high_resolution_clock::now();
+			duration = end - start;
+		}
+#endif
+		float s = duration.count(); // result in seconds
+
+#if TIMING_DEBUG
+		++_frameCount;
+		if (_frameCount == 0) _avgTime = s;
+		else _avgTime += s;
+
+		if (_frameCount >= 5) {
+			_avgTime /= 5.f;
+		}
+		std::cout << "Last Frame Time: " << s << "s\n";
+		if (_frameCount >= 5) {
+			std::cout << "FPS: " << 1.f / _avgTime << " Frames/sec\n";
+			_frameCount = 0;
+		}
+#else
+		++_frameCount;
+		if (_frameCount == 0) _avgTime = s;
+		else _avgTime += s;
+
+		if (_frameCount >= 5) {
+			_frames_per_sec = (int)_avgTime / 5;
+			_frameCount = 0;
+		}
+#endif
+	}
+};
 
 struct NES_Colour {
 	std::string				name{ "Black" };
@@ -28,19 +80,19 @@ const std::array<std::array<NES_Colour, 16>, 4> _pal_colour_lookup{ // Row-Major
 	{ // Array Bracket
 		{ 
 			{
-				{"Grey3",98,98,98},
-				{"Blue4",0,46,152},
-				{"DeepBlue4",12,17,194},
-				{"Violet4",59,0,194},
-				{"Purple4",101,0,152},
-				{"Magenta4",125,0,78},
-				{"Red4",125,0,0},
-				{"Brown4",101,25,0},
-				{"Olive4",59,54,0},
-				{"DeepGreen4",12,79,0},
-				{"Green4",0,91,0},
-				{"Emerald4",0,89,0},
-				{"Teal4",0,73,78},
+				{"Dark Grey",98,98,98},
+				{"Dark Azure",0,46,152},
+				{"Navy Blue",12,17,194},
+				{"Dark Violet",59,0,194},
+				{"Dark Magenta",101,0,152},
+				{"Dark Rose",125,0,78},
+				{"Maroon/Red",125,0,0},
+				{"Dark Orange",101,25,0},
+				{"Dark Olive",59,54,0},
+				{"Dark Chartreuse",12,79,0},
+				{"Dark Green",0,91,0},
+				{"Dark Spring",0,89,0},
+				{"Dark Cyan",0,73,78},
 				{"Infra-Black",0,0,0},
 				{"Black",0,0,0},
 				{"Black",0,0,0}
@@ -49,19 +101,19 @@ const std::array<std::array<NES_Colour, 16>, 4> _pal_colour_lookup{ // Row-Major
 
 		{
 			{
-				{"Grey2",171,171,171},
-				{"Blue3",0,100,243},
-				{"DeepBlue3",53,60,255},
-				{"Violet3",118,27,255},
-				{"Purple3",174,10,243},
-				{"Magenta3",206,13,143},
-				{"Red3",206,35,28},
-				{"Brown3",174,71,0},
-				{"Olive3",118,111,0},
-				{"DeepGreen3",53,144,0},
-				{"Green3",0,161,0},
-				{"Emerald3",0,158,28},
-				{"Teal3",0,136,143},
+				{"Silver",171,171,171},
+				{"Azure",0,100,243},
+				{"Blue",53,60,255},
+				{"Violet",118,27,255},
+				{"Purple",174,10,243},
+				{"Magenta",206,13,143},
+				{"Red",206,35,28},
+				{"Brown",174,71,0},
+				{"Olive",118,111,0},
+				{"DeepGreen",53,144,0},
+				{"Green",0,161,0},
+				{"Emerald",0,158,28},
+				{"Teal",0,136,143},
 				{"Black",0,0,0},
 				{"Black",0,0,0},
 				{"Black",0,0,0}
@@ -71,19 +123,19 @@ const std::array<std::array<NES_Colour, 16>, 4> _pal_colour_lookup{ // Row-Major
 		{
 			{
 				{"White",255,255,255},
-				{"Blue2",78,181,255},
-				{"DeepBlue2",133,140,255},
-				{"Violet2",200,107,255},
-				{"Purple2",255,89,255},
-				{"Magenta2",255,92,225},
-				{"Red2",255,115,107},
-				{"Brown2",255,152,5},
-				{"Olive2",200,192,0},
-				{"DeepGreen2",133,226,0},
-				{"Green2",76,244,5},
-				{"Emerald2",43,241,107},
-				{"Teal2",43,218,225},
-				{"Grey4",78,78,78},
+				{"Light Azure",78,181,255},
+				{"Light Blue",133,140,255},
+				{"Light Violet",200,107,255},
+				{"FUchsia/Magenta",255,89,255},
+				{"Light Rose",255,92,225},
+				{"Light Red",255,115,107},
+				{"Light Brown",255,152,5},
+				{"Light Yellow",200,192,0},
+				{"Light Chartreuse",133,226,0},
+				{"Light Green",76,244,5},
+				{"Light Spring",43,241,107},
+				{"Aqua/Cyan",43,218,225},
+				{"Light Grey4",78,78,78},
 				{"Black",0,0,0},
 				{"Black",0,0,0}
 			}
@@ -92,23 +144,23 @@ const std::array<std::array<NES_Colour, 16>, 4> _pal_colour_lookup{ // Row-Major
 		{
 			{
 				{"White",255,255,255},
-				{"Blue1",184,225,255},
-				{"DeepBlue1",206,209,255},
-				{"Violet1",232,196,255},
-				{"Purple1",255,189,255},
-				{"Magenta1",255,190,243},
-				{"Red1",255,199,196},
-				{"Brown1",255,214,156},
-				{"Olive1",232,230,132},
-				{"DeepGreen1",206,243,132},
-				{"Green1",184,250,156},
-				{"Emerald1",171,249,196},
-				{"Teal1",171,240,243},
-				{"Grey1",184,184,184},
+				{"Pale Azure",184,225,255},
+				{"Pale Blue",206,209,255},
+				{"Pale Violet",232,196,255},
+				{"Pale Magenta",255,189,255},
+				{"Pale Rose",255,190,243},
+				{"Pale Red",255,199,196},
+				{"Pale Orange",255,214,156},
+				{"Pale Olive",232,230,132},
+				{"Pale Chartreuse",206,243,132},
+				{"Pale Green",184,250,156},
+				{"Pale Spring",171,249,196},
+				{"Pale Cyan",171,240,243},
+				{"Pale Grey",184,184,184},
 				{"Black",0,0,0},
 				{"Black",0,0,0}
 			}
-		}  // 3x
+		}, // 3x
 	}
 };
 

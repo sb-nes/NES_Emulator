@@ -68,9 +68,9 @@ namespace NES::PPU {
 		std::shared_ptr<NES::Cartridge::GameCard>		_card;
 
 		// Object Attribute Memory [OAM]
-		u8		_data{ 0x00 };
 
 		// Instance or whatever data is needed by PPU from the cartridge
 		// ???
+		u8		_data{ 0x00 };
 	};
 }

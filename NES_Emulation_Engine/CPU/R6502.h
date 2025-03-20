@@ -117,9 +117,11 @@ namespace NES::CPU {
 		}
 
 		void clock() { // Per Clock Signal
+
 			if (_bus.clock()) {
 				nmi();// NMI Interrupt
 			}
+			
 			++_ticks;
 			if (_cycles == 0) {
 				assert(_cycles == 0);
