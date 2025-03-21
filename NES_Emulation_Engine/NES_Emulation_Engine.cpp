@@ -472,16 +472,19 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 				is_running &= (msg.message != WM_QUIT); // If a quit signal is not sent, the loop will continue
 			}
 
-			if (!_dispatched) {
-				_dispatched = true;
-				_nes = std::async(std::launch::async ,update_frame);
-			}
+			// TODO: dispatch to another thread later after testing if ppu works 
+			//if (!_dispatched) {
+			//	_dispatched = true;
+			//	_nes = std::async(std::launch::async ,update_frame);
+			//}
+
+			update_frame();
 
 			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
 
 			// TODO: find how to update the window title
+
 			
-			// TODO: set the timing circuit code for the cpu/ppu clock
 		}
 		destroyNES();
 	}

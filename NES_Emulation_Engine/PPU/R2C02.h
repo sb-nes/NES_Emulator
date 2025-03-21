@@ -43,7 +43,7 @@ namespace NES::PPU { // Picture Processing Unit
 				if (_mask_register.background_enable || _mask_register.sprite_enable) {
 					if (_v_register.coarse_x == 31) { // End of Nametable
 						_v_register.coarse_x = 0;
-						_v_register.nametable_x = ~_v_register.nametable_x; // but why flip?
+						_v_register.nametable_x = ~(_v_register.nametable_x); // but why flip?
 					} else {
 						++_v_register.coarse_x;
 					}
@@ -59,7 +59,7 @@ namespace NES::PPU { // Picture Processing Unit
 
 						if (_v_register.coarse_y == 29) { // End of Nametable
 							_v_register.coarse_y = 0;
-							_v_register.nametable_y = ~_v_register.nametable_y; // again, why flip?
+							_v_register.nametable_y = ~(_v_register.nametable_y); // again, why flip?
 						} else if (_v_register.coarse_y == 31) { // Attribute Mem. just in case
 							_v_register.coarse_y = 0;
 						} else {
@@ -110,11 +110,7 @@ namespace NES::PPU { // Picture Processing Unit
 				} 
 
 				if (_scanline == 0 && _cycle == 0) { // Odd Frame
-					++_cycle;
-				}
-
-				if (_scanline == -1 && _cycle >= 280 && _cycle < 305) { // Where???
-					ResetAddressY();
+					++_cycle; // Skipped on BG+Odd
 				}
 
 				if ((_cycle >= 2 && _cycle < 258) || (_cycle >= 321 && _cycle < 338)) {
@@ -124,13 +120,13 @@ namespace NES::PPU { // Picture Processing Unit
 					switch ((_cycle - 1) % 8) {
 						case 0: // NT / Nametable Read
 							LoadBgShiftRegisters();
-							_pattern_id_background = read((_v_register.value & 0x0FFF) | 0x2000);
+							_pattern_id_background = read(0x2000 | (_v_register.value & 0x0FFF));
 						break;
 
 						case 2: // AT / Attribute table Read
 							// Simple Explanation: Using bit manipulation to divide coarse_y and coarse_x by 4, such that we can look at regions of '16x16' instead of 8x8 tiles
 							_attribute_background = read((_v_register.nametable_y << 11) | (_v_register.nametable_x << 10) | ((_v_register.coarse_y >> 2) << 3) | (_v_register.coarse_x >> 2) | 0x23C0);
-
+							
 							// Bottom-Right << 6 | Bottom-Left << 4 | Top-Right << 2 | Top-Left 
 							if (_v_register.coarse_y & 0x02) _attribute_background >>= 4; // Top or Bottom
 							if (_v_register.coarse_x & 0x02) _attribute_background >>= 2; // Left or Right
@@ -163,13 +159,11 @@ namespace NES::PPU { // Picture Processing Unit
 					ResetAddressX();
 				}
 
-				if (_cycle == 338 || _cycle == 340)
-				{
+				if (_cycle == 338 || _cycle == 340) {
 					_pattern_id_background = read(0x2000 | (_v_register.value & 0x0FFF));
 				}
 
-				if (_scanline == -1 && _cycle >= 280 && _cycle < 305)
-				{
+				if (_scanline == -1 && _cycle >= 280 && _cycle < 305) { // Where???
 					// End of vertical blank period so reset the Y address ready for rendering
 					ResetAddressY();
 				}
@@ -179,12 +173,15 @@ namespace NES::PPU { // Picture Processing Unit
 				// Do Nothing RN
 			}
 
-			if (_scanline >= 241 && _cycle == 1) { // Vertical blanking lines
-				_status_register.v_blank = 1;
-				if (_ctrl_register.nmi_enable) _nmi_trigger = true;
+			if (_scanline >= 241 && _scanline < 261) {
+				// error 1: i was triggering nmi for every scanline after vertical blank starts
+				if (_scanline == 241 && _cycle == 1) { // Vertical blanking lines
+					_status_register.v_blank = 1;
+					if (_ctrl_register.nmi_enable) _nmi_trigger = true;
+				}
 			}
 
-			/*
+			
 			u8 bg_pix{ 0x00 };
 			u8 bg_pal{ 0x00 };
 
@@ -201,15 +198,15 @@ namespace NES::PPU { // Picture Processing Unit
 			}
 
 			// set pixel
-			if (_scanline > 0 && _scanline <= 240 && _cycle > 0 && _cycle <= 256) {
-				_display[_scanline-1][_cycle - 1] = _bus.read_palette_colour(bg_pal, bg_pix);
+			if (_scanline > 0 && _scanline <= 240 && _cycle >= 0 && _cycle <= 255) {
+				_display[_scanline-1][_cycle] = _bus.read_palette_colour(bg_pal, bg_pix);
 			}
-			*/
 
-			++_cycle; // Works like a scanline across the screen of the CRT
+			++_cycle; // Scans Across the Screen
+
 			if (_cycle >= 341) { // HIT CRT EDGE
 				_cycle = 0;
-				++_scanline;
+				++_scanline; // Scans Vertically Down
 				if (_scanline >= 261) { // Past V-Blank Space
 					_scanline = -1;
 					_frame_scan_complete = true;
@@ -220,11 +217,30 @@ namespace NES::PPU { // Picture Processing Unit
 		}
 
 		void reset() {
+			// MMIO Registers
 			_status_register.value = 0x00;
 			_mask_register.value = 0x00;
 			_ctrl_register.value = 0x00;
+			// Internal Registers
 			_t_register.value = 0x0000;
 			_v_register.value = 0x0000;
+			_x_register = 0x00;
+			_w_register = 0x00;
+
+			_internal_read_buffer = 0x00;
+			_scanline = 0;
+			_cycle = 0;
+
+			_pattern_id_background = 0x00;
+			_attribute_background = 0x00;
+			_bitplane_lsb_background = 0x00;
+			_bitplane_msb_background = 0x00;
+
+			// Shift Registers
+			bg_shifter_pattern_lo = 0x0000;
+			bg_shifter_pattern_hi = 0x0000;
+			bg_shifter_attrib_lo = 0x0000;
+			bg_shifter_attrib_hi = 0x0000;
 		}
 
 		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) {

@@ -47,7 +47,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 
 			case 0x0006: // PPUADDR -> [Picture Processing Unit] Memory Address
 				if (_w_register == 0) { // store high address
-					_t_register.value = (_t_register.value & 0x00FF) | (data << 8);
+					_t_register.value = (u16)(data << 8) | (_t_register.value & 0x00FF);
 					_w_register = 1;
 				} else { // store low address
 					_t_register.value = (_t_register.value & 0xFF00) | data;
@@ -95,7 +95,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 				_internal_read_buffer = read(_v_register.value);
 
 				if (_v_register.value >= 0x3F00) data = _internal_read_buffer;
-				_v_register.value += _ctrl_register.increment_mode ? 32 : 1;
+				_v_register.value += (_ctrl_register.increment_mode ? 32 : 1);
 			break;
 
 			default: break;

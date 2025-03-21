@@ -68,7 +68,7 @@ namespace NES::CPU {
 			_stack_pointer = 0xFD;
 			_status_register = 0x00 | StateFlags::U | StateFlags::I; // Disable Interrupts at Init.
 
-			_cycles = 2;
+			//_cycles = 2;
 			_address_abs = 0xFFFC; // Reset vector, which points at code to initialize the NES chipset | $FFFC–$FFFD
 			u16 l_address = read_memory(_address_abs + 0);
 			u16 h_address = read_memory(_address_abs + 1);
@@ -80,7 +80,7 @@ namespace NES::CPU {
 			_data = 0x00;
 
 			_bus.reset();
-			_ticks = 0;
+			_ticks = -1;
 
 #if CPU_TEST
 			_cycles = 0;
@@ -98,7 +98,7 @@ namespace NES::CPU {
 		void irq() { // Can occur at any point of time | Can be disabled. | level-sensitive (reacts to a low signal level) | Triggered by external hardware
 			if (GetFlag(StateFlags::I) == 0) {
 
-				SetFlag(StateFlags::B, 0);
+				SetFlag(StateFlags::B, true);
 				_address_abs = 0xFFFE;  // IRQ/BRK vector, which may point at a mapper's interrupt handler (or, less often, a handler for APU interrupts) | $FFFE–$FFFF
 				interrupt();
 
@@ -109,7 +109,7 @@ namespace NES::CPU {
 		// Non-Maskable Interrupt
 		void nmi() { // Can occur at any point of time | edge-sensitive (reacts to high-to-low transitions in the signal) 
 
-			SetFlag(StateFlags::B, 0);
+			SetFlag(StateFlags::B, 1);
 			_address_abs = 0xFFFA;  //  NMI vector, which points at an NMI handler | $FFFA–$FFFB
 			interrupt();
 
@@ -117,15 +117,10 @@ namespace NES::CPU {
 		}
 
 		void clock() { // Per Clock Signal
-
-			if (_bus.clock()) {
-				nmi();// NMI Interrupt
-			}
 			
 			++_ticks;
 			if (_cycles == 0) {
 				assert(_cycles == 0);
-				++_cycles; // Since, whenever i read, i use one cpu cycle in the read function
 				_opcode = read_memory(_program_counter++);
 
 #if OPCODE_DEBUG
@@ -173,24 +168,38 @@ namespace NES::CPU {
 #endif // OPCODE_DEBUG
 
 				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
-				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
-				_cycles += (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
+				u8 _cycles1 = (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
+				u8 _cycles2 = (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
 				
+				_cycles += (_cycles1 & _cycles2); // What?
+
 				(this->*delay_change)();
 				(this->*delay_assign)(); // fbrereto -> https://stackoverflow.com/questions/2898316/using-a-member-function-pointer-within-a-class
 
 #if OPCODE_DEBUG
-				std::cout << hexString(_accumulator, 2) << " " << hexString(_x_register, 2) << " " << hexString(_y_register, 2) << "\n";
+				std::cout << hexString(_accumulator, 2) << " " << hexString(_x_register, 2) << " " << hexString(_y_register, 2) << " " << hexString(_stack_pointer, 2) << " ";
+				std::cout << (GetFlag(StateFlags::N) != 0 ? "N" : ".");
+				std::cout << (GetFlag(StateFlags::V) != 0 ? "V" : ".");
+				std::cout << (GetFlag(StateFlags::U) != 0 ? "U" : ".");
+				std::cout << (GetFlag(StateFlags::B) != 0 ? "B" : ".");
+				std::cout << (GetFlag(StateFlags::D) != 0 ? "D" : ".");
+				std::cout << (GetFlag(StateFlags::I) != 0 ? "I" : ".");
+				std::cout << (GetFlag(StateFlags::Z) != 0 ? "Z" : ".");
+				std::cout << (GetFlag(StateFlags::C) != 0 ? "C" : ".") << "\n";
 #endif // OPCODE_DEBUG
 
 #if CPU_TEST
 				--_instructions_count;
 #endif // CPU_TEST
-
 			}
-			else {
-				// wait for set time
-				--_cycles;
+			
+			// wait for set time
+			--_cycles;
+
+			for (int i{ 0 }; i < 3; ++i) {
+				if (_bus.clock()) {
+					nmi();// NMI Interrupt
+				}
 			}
 		}
 		/// END INTERRUPTS ///

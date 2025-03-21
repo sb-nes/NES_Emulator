@@ -20,7 +20,7 @@ namespace NES::Cartridge {
 			return chk && (name[4]='\32'); // \32 -> <EOF>
 		}
 
-		struct iNES_Header { // Format for iNES Header - 16 bytes [removing check_name from it makes 14 bytes]
+		struct iNES_Header { // Format for iNES Header - 16 bytes [removing check_name from it makes 12 bytes]
 
 			u8 PRG_ROM_Count; // PRG-ROM division/banks
 			u8 CHR_ROM_Count; // CHR-ROM division/banks
@@ -121,8 +121,8 @@ namespace NES::Cartridge {
 
 				case 1: // version 1.0
 					card->set_program_banks_count(header.PRG_ROM_Count);
-					card->init_program_memory(reader);
 					card->set_character_banks_count(header.CHR_ROM_Count);
+					card->init_program_memory(reader);
 					card->init_character_memory(reader);
 
 					card->set_mirror(mirror);

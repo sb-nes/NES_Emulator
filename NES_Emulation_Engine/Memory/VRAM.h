@@ -13,7 +13,7 @@ namespace NES::Memory {
 	namespace {
 
 		u16 get_vram_address(u16 m_address) { // if the address points to a mirror of the ram, bitwise modulo gets the address. -> |x % 2^n| = x & (2^n -1) -> Only works for powers of 2
-			return m_address & 0x07FF; // Size of RAM is 2048 bytes | 2KB
+			return m_address & 0x03FF; // Size of RAM is 2048 bytes | 2KB
 		}
 
 	} // anonymous namespace
@@ -21,26 +21,26 @@ namespace NES::Memory {
 	class VRAM {
 	public:
 		VRAM() {
-			for (auto& i : _vram) i = 0x00; // Clear RAM before creating, Just in Case...
-
-			for (int i{ 0 }; i < 2048; ++i) { // u8 makes it ill defined... [Just Warning tho]
-				_vram_heap[i] = 0x00; // Clear RAM before creating, Just in Case...
-			}
+			//for (auto& i : _vram) i = 0x00; // Clear RAM before creating, Just in Case...
+			//
+			//for (int i{ 0 }; i < 2048; ++i) { // u8 makes it ill defined... [Just Warning tho]
+			//	_vram_heap[i] = 0x00; // Clear RAM before creating, Just in Case...
+			//}
 		}
 
 		~VRAM() {
 			delete[] _vram_heap;
 		}
 
-		u8 read(u16 address, bool bReadOnly = false) {
-			return _vram[get_vram_address(address)];
+		u8 read(u16 address, u8 nametable) {
+			return _vram[nametable][get_vram_address(address)];
 		}
 
-		void write(u16 address, u8 data) {
+		void write(u16 address, u8 nametable, u8 data) {
 			assert(address >= 0x0000 && address <= 0x1FFF); // RAM and it's mirrors
 			assert(data >= 0x00 && data <= 0xFF); // Is this check necessary?
 
-			_vram[get_vram_address(address)] = data;
+			_vram[nametable][get_vram_address(address)] = data;
 		}
 
 		void disassemble_vram();
@@ -49,7 +49,7 @@ namespace NES::Memory {
 	private:
 		// WRAM - Work RAM -> 2KB Static RAM [SRAM]
 
-		std::array<u8, 2048> _vram{}; // Should I use the stack or heap?
+		std::array<std::array<u8, 2048>, 2> _vram{}; // Should I use the stack or heap?
 		u8* const _vram_heap = new u8[2048];
 	};
 }

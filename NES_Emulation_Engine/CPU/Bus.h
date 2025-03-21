@@ -57,12 +57,10 @@ namespace NES::CPU {
 		}
 
 		bool clock() { 
-			for (int i{ 0 }; i < 3; ++i) {
-				_ppu.clock();
-				if (_ppu._nmi_trigger) {
-					_ppu._nmi_trigger = false;
-					return true;
-				}
+			_ppu.clock();
+			if (_ppu._nmi_trigger) {
+				_ppu._nmi_trigger = false;
+				return true; // it might go into nmi at different times, making inconsistent clock routines
 			}
 			return false;
 		}

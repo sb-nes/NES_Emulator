@@ -27,7 +27,11 @@ namespace NES::Cartridge {
 		}
 
 		void init_character_memory(std::ifstream& reader){
-			_character_memory.resize(_character_banks_count * 8192); // Each Character ROM chip size is 8KB
+			if (_character_banks_count > 0) {
+				_character_memory.resize(_character_banks_count * 8192); // Each Character ROM chip size is 8KB
+			} else {
+				_character_memory.resize(8192); // Acts as Character RAM
+			}
 			reader.read((char*)_character_memory.data(), _character_memory.size());
 		}
 
@@ -37,7 +41,7 @@ namespace NES::Cartridge {
 		u8 get_character_banks_count() { return _character_banks_count; }
 
 		void set_cartridge_size(u64 size) { _size = size; }
-		void set_mirror(u8 mirror) { _mirror = mirror ? Mirror::VERTICAL : Mirror::HORIZONTAL; }
+		void set_mirror(u8 &mirror) { _mirror = mirror ? Mirror::VERTICAL : Mirror::HORIZONTAL; }
 
 		void set_mapper(std::shared_ptr<Mapper> map) { _mapper = map; }
 		std::shared_ptr<Mapper> get_mapper() { return _mapper; }
@@ -64,13 +68,13 @@ namespace NES::Cartridge {
 		// Table 1 -> foreground elements
 		// Table 2 -> background elements
 
-		u8							_mapper_id{ 0 }; // which mapper currently in use
 		std::shared_ptr<Mapper>		_mapper;
+		u8							_mapper_id{ 0 }; // which mapper currently in use
 
+		u64							_size{ 0 };
 		u8							_program_banks_count{ 0 };
 		u8							_character_banks_count{ 0 };
 
-		u64							_size{ 0 };
 	};
 
 	std::shared_ptr<NES::Cartridge::GameCard> load_file(std::string file);

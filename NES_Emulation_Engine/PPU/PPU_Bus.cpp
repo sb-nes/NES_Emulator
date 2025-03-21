@@ -5,10 +5,8 @@ namespace NES::PPU {
 		u16 chip_select(u16 address) { // Acts as the discrete logic chip 74LS139 -> the NES combines a relatively small number of pins to produce a chip select signal for each of the individual components.
 			if ((address & 0x2000)) {
 				if (!(address & 0x1000)) return 1;
-				else if (address >= 0x3F00)
-					return 3;
-				else
-					return 2;
+				else if (address >= 0x3F00) return 3;
+				else return 2;
 			} else {
 				return 0;
 			}
@@ -26,7 +24,7 @@ namespace NES::PPU {
 		bool result{ false };
 		switch (chip_select(address)) {
 			case 0: // $0000-1FFF -> Cartridge CHR-ROM/RAM -> Pattern Table
-				result = _card->ppu_read(address, data);
+				result = _card->ppu_write(address, data); // I'm going into ppu write due to wrong addresses
 				assert(result); // should never fail
 			break;
 
@@ -37,8 +35,7 @@ namespace NES::PPU {
 					if (address >= 0x0400 && address <= 0x07FF) _vRAM[1][address & 0x03FF] = data;
 					if (address >= 0x0800 && address <= 0x0BFF) _vRAM[0][address & 0x03FF] = data;
 					if (address >= 0x0C00 && address <= 0x0FFF) _vRAM[1][address & 0x03FF] = data;
-				}
-				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
+				} else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
 					if (address >= 0x0000 && address <= 0x03FF) _vRAM[0][address & 0x03FF] = data;
 					if (address >= 0x0400 && address <= 0x07FF) _vRAM[0][address & 0x03FF] = data;
 					if (address >= 0x0800 && address <= 0x0BFF) _vRAM[1][address & 0x03FF] = data;
@@ -54,8 +51,7 @@ namespace NES::PPU {
 					if (address >= 0x0400 && address <= 0x07FF) _vRAM[1][address & 0x03FF] = data;
 					if (address >= 0x0800 && address <= 0x0BFF) _vRAM[0][address & 0x03FF] = data;
 					if (address >= 0x0C00 && address <= 0x0FFF) _vRAM[1][address & 0x03FF] = data;
-				}
-				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
+				} else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
 					if (address >= 0x0000 && address <= 0x03FF) _vRAM[0][address & 0x03FF] = data ;
 					if (address >= 0x0400 && address <= 0x07FF) _vRAM[0][address & 0x03FF] = data ;
 					if (address >= 0x0800 && address <= 0x0BFF) _vRAM[1][address & 0x03FF] = data ;
@@ -87,8 +83,7 @@ namespace NES::PPU {
 					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[1][address & 0x03FF];
 					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0][address & 0x03FF];
 					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[1][address & 0x03FF];
-				}
-				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
+				} else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
 					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[0][address & 0x03FF];
 					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0][address & 0x03FF];
 					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[1][address & 0x03FF];
@@ -103,8 +98,7 @@ namespace NES::PPU {
 					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[1][address & 0x03FF];
 					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[0][address & 0x03FF];
 					if (address >= 0x0C00 && address <= 0x0FFF) _data = _vRAM[1][address & 0x03FF];
-				}
-				else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
+				} else if (_card->_mirror == Cartridge::GameCard::Mirror::HORIZONTAL) {
 					if (address >= 0x0000 && address <= 0x03FF) _data = _vRAM[0][address & 0x03FF];
 					if (address >= 0x0400 && address <= 0x07FF) _data = _vRAM[0][address & 0x03FF];
 					if (address >= 0x0800 && address <= 0x0BFF) _data = _vRAM[1][address & 0x03FF];
@@ -113,7 +107,7 @@ namespace NES::PPU {
 			break;
 
 			case 3: // $3F00-3FFF -> Palette RAM
-				return _palette_RAM[get_palette_ram_address(address)];
+				return _palette_RAM[get_palette_ram_address(address)]; // TODO: get _mask_register value here
 			
 			default: break;
 		}
