@@ -8,6 +8,7 @@
 5. PPU/R-MOS-2C02 - Testing | Failing
 6. Output Window - Testing | Somehow Passing
 7. Timing - `Passed`
+8. Basic NES Controller - `Passed`
 
 
 ![palette read 1](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu1.gif)
@@ -37,7 +38,7 @@ I can't seem to figure out the root of this problem, but it *plagues* my soul aw
 ![Timing](https://github.com/sb-nes/NES_Emulator/blob/sane/images/FPS.png)
 
 
-`Failure` just like my `Exams`:
+`Whoops`:
 ![Failed Tests](https://github.com/sb-nes/NES_Emulator/blob/sane/images/FailedTests.png)
 
 
