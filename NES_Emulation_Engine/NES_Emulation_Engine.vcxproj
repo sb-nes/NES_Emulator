@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Cartridge\iNES1.0\M_000_NROM.cpp" />
+    <ClCompile Include="Controller\Standard.cpp" />
     <ClCompile Include="CPU\Bus.cpp" />
     <ClCompile Include="CPU\R6502.cpp" />
     <ClCompile Include="Memory\RAM.cpp" />
@@ -28,6 +29,7 @@
     <ClInclude Include="Common\CpuTest.h" />
     <ClInclude Include="Common\PrimitiveTypes.h" />
     <ClInclude Include="Common\Test.h" />
+    <ClInclude Include="Controller\Controller.h" />
     <ClInclude Include="CPU\Bus.h" />
     <ClInclude Include="CPU\R6502.h" />
     <ClInclude Include="Cartridge\Mapper.h" />

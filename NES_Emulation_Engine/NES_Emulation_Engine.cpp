@@ -27,18 +27,22 @@ namespace {
 } // anonymous namespace
 
 
-CPU::R6502					_nes_instance{};
-PPU::R2C02*					_ppu_instance{};
-display						_display;
-pattern_table				_table1;
-pattern_table				_table2;
-palette						_palette;
-nametable					_nametable;
-int							_count{ 0 };
-unsigned int				_tick{ 0 };
-bool						_dispatched{ false };
-std::mutex					_nes_mutex;
-std::future<void>			_nes;
+CPU::R6502														_nes_instance{};
+PPU::R2C02*														_ppu_instance{};
+display															_display;
+u8																_controller1{ 0x00 };
+u8																_controller2{ 0x00 };
+std::array<std::shared_ptr<NES::Input::Controller>, 2>			_controller;
+
+pattern_table													_table1;
+pattern_table													_table2;
+palette															_palette;
+nametable														_nametable;
+int																_count{ 0 };
+unsigned int													_tick{ 0 };
+bool															_dispatched{ false };
+std::mutex														_nes_mutex;
+std::future<void>												_nes;
 
 bool createNES() {
 	std::cout << "\nCreating NES Hardware Instance!" << std::endl;
@@ -72,8 +76,6 @@ void destroyNES() {
 	//delete _nes_instance;
 	std::cout << "NES Instance Terminated!\n\n";
 }
-
-
 
 // Platform Dependant Code
 
@@ -203,6 +205,71 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 		case WM_MOVE:
 		return 0;
 
+		//Keyboard
+		case WM_KEYDOWN:
+			switch (wparam) {
+				case 'A':
+					_controller1 = _controller1 | 0x01;
+				break;
+				case 'B':
+					_controller1 = _controller1 | 0x02;
+				break;
+				case VK_RETURN:
+					_controller1 = _controller1 | 0x04;
+				break;
+				case VK_SPACE:
+					_controller1 = _controller1 | 0x08;
+				break;
+				case VK_UP:
+					_controller1 = _controller1 | 0x10;
+				break;
+				case VK_DOWN:
+					_controller1 = _controller1 | 0x20;
+				break;
+				case VK_LEFT:
+					_controller1 = _controller1 | 0x40;
+				break;
+				case VK_RIGHT:
+					_controller1 = _controller1 | 0x80;
+				break;
+
+				default:
+					return DefWindowProc(hwnd, msg, wparam, lparam);
+			}
+			return 0;
+
+		case WM_KEYUP:
+			switch (wparam) {
+				case 'A':
+					_controller1 = _controller1 & 0xFE;
+				break; 
+				case 'B':
+					_controller1 = _controller1 & 0xFD;
+				break;
+				case VK_RETURN:
+					_controller1 = _controller1 & 0xFB;
+				break;
+				case VK_SPACE:
+					_controller1 = _controller1 & 0xF7;
+				break;
+				case VK_UP:
+					_controller1 = _controller1 & 0xEF;
+				break;
+				case VK_DOWN:
+					_controller1 = _controller1 & 0xDF;
+				break;
+				case VK_LEFT:
+					_controller1 = _controller1 & 0xBF;
+				break;
+				case VK_RIGHT:
+					_controller1 = _controller1 & 0x7F;
+				break;
+
+			default:
+				return DefWindowProc(hwnd, msg, wparam, lparam);
+			}
+			return 0;
+
 		default: break;
 	}
 
@@ -300,9 +367,13 @@ int init_frame() {
 void update_frame() {
 
 	FrameTimer timer;
-
+	
 	// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
 	while (!_ppu_instance->_frame_scan_complete) {
+		if (_controller[0]->get_latch()) {
+			_controller[0]->set(_controller1);
+			_controller[1]->set(_controller2);
+		}
 		_nes_instance.clock();
 	}
 
@@ -460,6 +531,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
 		if (!createNES()) return 0;
 		_nes_instance.get_ppu(_ppu_instance);
+		_nes_instance.get_controllers(_controller);
 
 		while (is_running) {
 			// Engine's update function

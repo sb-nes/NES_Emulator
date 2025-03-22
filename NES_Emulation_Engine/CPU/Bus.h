@@ -4,6 +4,7 @@
 #include "../Memory/RAM.h"
 #include "../PPU/R2C02.h"
 #include "../Cartridge/Cartridge.h"
+#include "../Controller/Controller.h"
 #include "../Common/CpuTest.h"
 
 namespace NES::CPU {
@@ -15,6 +16,9 @@ namespace NES::CPU {
 			_cartridge_inserted = true;
 
 			_ppu.connect_card(_cartridge);
+
+			_controller[0] = std::make_shared<Input::Standard>(0);
+			_controller[1] = std::make_shared<Input::Standard>(1);
 		}
 
 		~Bus() { /* Delete Pointers */ }
@@ -56,7 +60,7 @@ namespace NES::CPU {
 			_ram.disassemble_wram(start, end); 
 		}
 
-		bool clock() { 
+		bool clock() {
 			_ppu.clock();
 			if (_ppu._nmi_trigger) {
 				_ppu._nmi_trigger = false;
@@ -67,6 +71,10 @@ namespace NES::CPU {
 
 		void get_ppu(PPU::R2C02*& ppu) {
 			ppu = &_ppu;
+		}
+
+		void get_controllers(std::array<std::shared_ptr<NES::Input::Controller>, 2>& controller) {
+			controller = _controller;
 		}
 
 		// Writes Data to the Address Location on the Bus
@@ -80,8 +88,9 @@ namespace NES::CPU {
 		std::shared_ptr<NES::Cartridge::GameCard>	_cartridge;
 
 		// I/O Hardware
-		NES::PPU::R2C02								_ppu{};
-		NES::Memory::RAM							_ram{};
+		NES::PPU::R2C02												_ppu{};
+		NES::Memory::RAM											_ram{};
+		std::array<std::shared_ptr<NES::Input::Controller>, 2>		_controller;
 	};
 
 } // NES CPU

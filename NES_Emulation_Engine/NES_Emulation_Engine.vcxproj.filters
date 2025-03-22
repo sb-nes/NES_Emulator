@@ -10,6 +10,7 @@
     <ClCompile Include="PPU\PPU_Bus.cpp" />
     <ClCompile Include="Memory\VRAM.cpp" />
     <ClCompile Include="Memory\RAM.cpp" />
+    <ClCompile Include="Controller\Standard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU\Bus.h" />
@@ -29,6 +30,7 @@
     <ClInclude Include="Memory\VRAM.h" />
     <ClInclude Include="Resources\resource.h" />
     <ClInclude Include="NES_Emulation_Engine.h" />
+    <ClInclude Include="Controller\Controller.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\NES_Emulation.rc" />

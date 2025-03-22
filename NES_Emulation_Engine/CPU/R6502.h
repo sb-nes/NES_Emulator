@@ -216,6 +216,10 @@ namespace NES::CPU {
 			_bus.get_ppu(ppu);
 		}
 
+		void get_controllers(std::array<std::shared_ptr<NES::Input::Controller>, 2>& controller) {
+			_bus.get_controllers(controller);
+		}
+
 		// Get functions for CPU registers
 		[[nodiscard]] u8 get_status_register() { return _status_register; }
 		[[nodiscard]] u8 get_accumulator() { return _accumulator; }

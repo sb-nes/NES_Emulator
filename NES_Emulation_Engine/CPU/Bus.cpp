@@ -20,7 +20,6 @@ namespace NES::CPU {
 	// Writes to the Address Bus
 	void Bus::write(u16 address, u8 data) {
 		assert(address >= 0x0000 && address <= 0xFFFF);
-		assert(address != 0x8153);
 
 		switch (chip_select(address)) {
 			case 0: // $0000 SRAM/WRAM
@@ -36,6 +35,13 @@ namespace NES::CPU {
 					_cartridge->cpu_write(address, data);
 				} else { // $4000-401F I/O Registers
 
+
+					if (address == 0x4016 || address == 0x4017) {
+						_controller[0]->clock();
+						_controller[0]->write(address, data & 0x01);
+						_controller[1]->clock();
+						_controller[1]->write(address, data & 0x01);
+					}
 				}
 			break; 
 
@@ -43,7 +49,9 @@ namespace NES::CPU {
 				_cartridge->cpu_write(address, data);
 			break;
 
-			default: break;
+			default: 
+				assert(false && "Failed to Write on CPU Bus!");
+			break;
 		}
 	}
 
@@ -63,6 +71,10 @@ namespace NES::CPU {
 					return _cartridge->cpu_read(address);
 				else { // $4000-401F I/O Registers
 
+					if (address == 0x4016 || address == 0x4017) {
+						_controller[address & 0x01]->clock();
+						return _controller[address & 0x01]->read(address);
+					}
 				}
 			break;
 

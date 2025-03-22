@@ -133,7 +133,7 @@ namespace NES::Cartridge {
 					break;
 
 				default:
-					assert(false, "How did you even manage to do it?");
+					assert(false && "How did you even manage to do it?");
 					break;
 				}
 				

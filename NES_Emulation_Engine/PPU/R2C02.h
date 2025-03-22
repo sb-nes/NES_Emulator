@@ -86,20 +86,20 @@ namespace NES::PPU { // Picture Processing Unit
 
 			auto LoadBgShiftRegisters = [&]() { // Prepapres the registers
 
-				bg_shifter_pattern_lo = (bg_shifter_pattern_lo & 0xFF00) | _bitplane_lsb_background;
-				bg_shifter_pattern_hi = (bg_shifter_pattern_hi & 0xFF00) | _bitplane_msb_background;
+				_tile_low_shift_register = (_tile_low_shift_register & 0xFF00) | _bitplane_lsb_background;
+				_tile_high_shift_register = (_tile_high_shift_register & 0xFF00) | _bitplane_msb_background;
 
-				bg_shifter_attrib_lo = (bg_shifter_attrib_lo & 0xFF00) | ((_attribute_background & 0b01) ? 0xFF : 0x00);
-				bg_shifter_attrib_hi = (bg_shifter_attrib_hi & 0xFF00) | ((_attribute_background & 0b10) ? 0xFF : 0x00);
+				_palette_low_shift_register = (_palette_low_shift_register & 0xFF00) | ((_attribute_background & 0b01) ? 0xFF : 0x00);
+				_palette_high_shift_register = (_palette_high_shift_register & 0xFF00) | ((_attribute_background & 0b10) ? 0xFF : 0x00);
 			};
 
 			auto UpdateShiftRegisters = [&]() {
 				if (_mask_register.background_enable) {
-					bg_shifter_pattern_lo <<= 1;
-					bg_shifter_pattern_hi <<= 1;
+					_tile_low_shift_register <<= 1;
+					_tile_high_shift_register <<= 1;
 
-					bg_shifter_attrib_lo <<= 1;
-					bg_shifter_attrib_hi <<= 1;
+					_palette_low_shift_register <<= 1;
+					_palette_high_shift_register <<= 1;
 				}
 			};
 
@@ -188,12 +188,12 @@ namespace NES::PPU { // Picture Processing Unit
 			if (_mask_register.background_enable) {
 				u16 bit_mux = 0x8000 >> _x_register;
 
-				u8 p0_pixel = (bg_shifter_pattern_lo & bit_mux) > 0;
-				u8 p1_pixel = (bg_shifter_pattern_hi & bit_mux) > 0;
+				u8 p0_pixel = (_tile_low_shift_register & bit_mux) > 0;
+				u8 p1_pixel = (_tile_high_shift_register & bit_mux) > 0;
 				bg_pix = (p1_pixel << 1) | p0_pixel;
 
-				u8 bg_pal0 = (bg_shifter_attrib_lo & bit_mux) > 0;
-				u8 bg_pal1 = (bg_shifter_attrib_hi & bit_mux) > 0;
+				u8 bg_pal0 = (_palette_low_shift_register & bit_mux) > 0;
+				u8 bg_pal1 = (_palette_high_shift_register & bit_mux) > 0;
 				bg_pal = (bg_pal1 << 1) | bg_pal0;
 			}
 
@@ -237,10 +237,10 @@ namespace NES::PPU { // Picture Processing Unit
 			_bitplane_msb_background = 0x00;
 
 			// Shift Registers
-			bg_shifter_pattern_lo = 0x0000;
-			bg_shifter_pattern_hi = 0x0000;
-			bg_shifter_attrib_lo = 0x0000;
-			bg_shifter_attrib_hi = 0x0000;
+			_tile_low_shift_register = 0x0000;
+			_tile_high_shift_register = 0x0000;
+			_palette_low_shift_register = 0x0000;
+			_palette_high_shift_register = 0x0000;
 		}
 
 		void connect_card(std::shared_ptr<NES::Cartridge::GameCard> card) {
@@ -282,10 +282,10 @@ namespace NES::PPU { // Picture Processing Unit
 		u8						_bitplane_msb_background{ 0x00 }; // for bit-planes?
 
 		// 16-bit Shift Registers
-		u16						bg_shifter_pattern_lo{ 0x0000 };
-		u16						bg_shifter_pattern_hi{ 0x0000 };
-		u16						bg_shifter_attrib_lo{ 0x0000 };
-		u16						bg_shifter_attrib_hi{ 0x0000 };
+		u16						_tile_low_shift_register{ 0x0000 };
+		u16						_tile_high_shift_register{ 0x0000 };
+		u16						_palette_low_shift_register{ 0x0000 };
+		u16						_palette_high_shift_register{ 0x0000 };
 		// It is a mouthful, IK...
 
 		display					_display{};

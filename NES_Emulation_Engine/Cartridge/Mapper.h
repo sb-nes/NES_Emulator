@@ -14,7 +14,6 @@ namespace NES::Cartridge {
 
 		[[nodiscard]] constexpr u8 get_program_banks_count() { return _program_banks_count; }
 		[[nodiscard]] constexpr u8 get_character_banks_count() { return _character_banks_count; }
-
 		
 
 	private:
