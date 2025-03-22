@@ -374,6 +374,7 @@ void update_frame() {
 			_controller[0]->set(_controller1);
 			_controller[1]->set(_controller2);
 		}
+
 		_nes_instance.clock();
 	}
 
