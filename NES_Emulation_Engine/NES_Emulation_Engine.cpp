@@ -546,12 +546,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			}
 
 			// TODO: dispatch to another thread later after testing if ppu works 
-			//if (!_dispatched) {
-			//	_dispatched = true;
-			//	_nes = std::async(std::launch::async ,update_frame);
-			//}
+			if (!_dispatched) {
+				_dispatched = true;
+				_nes = std::async(std::launch::async ,update_frame);
+			}
 
-			update_frame();
+			// update_frame();
 
 			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
 

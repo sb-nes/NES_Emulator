@@ -48,11 +48,11 @@ struct FrameTimer { // Everything's public
 		if (_frameCount == 0) _avgTime = s;
 		else _avgTime += s;
 
-		if (_frameCount >= 5) {
-			_avgTime /= 5.f;
+		if (_frameCount >= 10) {
+			_avgTime /= 10.f;
 		}
-		std::cout << "Last Frame Time: " << s << "s\n";
-		if (_frameCount >= 5) {
+		if (_frameCount >= 10) {
+			std::cout << "Last Frame Time: " << s << "s\n";
 			std::cout << "FPS: " << 1.f / _avgTime << " Frames/sec\n";
 			_frameCount = 0;
 		}
@@ -61,7 +61,7 @@ struct FrameTimer { // Everything's public
 		if (_frameCount == 0) _avgTime = s;
 		else _avgTime += s;
 
-		if (_frameCount >= 5) {
+		if (_frameCount >= 10) {
 			_frames_per_sec = (int)_avgTime / 5;
 			_frameCount = 0;
 		}
