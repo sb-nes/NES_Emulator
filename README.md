@@ -48,7 +48,10 @@ Fixed it after a whole day of brain-storming. The whole program was failing majo
 ![Fixed it Finally](https://github.com/sb-nes/NES_Emulator/blob/sane/images/MuchBetterTests.png)
 
 
-I opened task manager to see that, it was using my GPU. On a Win32 window, without any graphics API. ***SURPRISED PIKACHU FACE***
+I opened task manager to see that, it was using my GPU. On a Win32 window, without any graphics API.
+
+ ***SURPRISED PIKACHU FACE***
+
 ![Fixed it Finally](https://github.com/sb-nes/NES_Emulator/blob/sane/images/GPUonGDI.png)
 
 #### Credit to javidx9 [not a clone of his olc_nes project] for his basic overview explanation of the Nintendo Entertainment System, NesHacker for his in-depth explanations and all the people behind the NesDev Wiki Reference Guide for it's documentations.
