@@ -26,7 +26,7 @@ The real reason the CPU and the whole application itself was slow because of `st
 ![pattern table output](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu3.gif)
 
 
-Why does it feel like I'm in **Conjuring**.
+Why does it feel like I'm in **Conjuring**?
 ![Unholy](https://github.com/sb-nes/NES_Emulator/blob/sane/images/SomethingWrong.png)
 
 
