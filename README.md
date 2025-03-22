@@ -2,7 +2,7 @@
 
 ## Currently Tested:
 1. SRAM/WRAM - `Passed`
-2. CPU/R-MOS-6502 - `Passed`
+2. CPU/R-MOS-6502 - `Failed`
 3. Cartridge ROM Loading [.nes/ines 1.0] - `Passed`
 4. Mapper 0 - `Passed`
 5. PPU/R-MOS-2C02 - Testing | Failing

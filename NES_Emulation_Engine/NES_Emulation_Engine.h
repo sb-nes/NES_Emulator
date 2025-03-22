@@ -12,8 +12,9 @@
 // Render Scale 4 will have wrapping issues if the maximum window size due to screen resolution is limited [1920x1080]
 
 #define CLOCK_TIME_IN_NANOSECONDS 1.f/1.79f
-#define THIRTY_FRAMES_PER_SECOND 1.0f/37.5f // WTF is this? how is this giving me 32 FPS sync limit
-#define FRAME_PER_SECOND 1.0f/75.0f // WTF is this? how is this giving me 32 FPS sync limit
+#define FRAME_PER_SECOND 1.0f/30.f // WTF is this? how is this giving me 32 FPS sync limit
+//#define FRAME_PER_SECOND 1.0f/37.5f // WTF is this? how is this giving me 32 FPS sync limit
+//#define FRAME_PER_SECOND 1.0f/75.0f // WTF is this? how is this giving me 32 FPS sync limit
 #define FRAME_LIMITER 1
 
 #define WINDOWS_GDI 1
