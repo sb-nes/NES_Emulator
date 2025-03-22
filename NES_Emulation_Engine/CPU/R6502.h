@@ -302,6 +302,7 @@ namespace NES::CPU {
 			assert(_cycles > 0);
 			_address_abs = (read_memory(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
 			_address_abs += _x_register;
+			_address_abs &= 0x00FF; // If a page cross occurs, it wraps into zero-page again
 			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;
@@ -311,6 +312,7 @@ namespace NES::CPU {
 			assert(_cycles > 0);
 			_address_abs = (read_memory(_program_counter++)) & 0x00FF; // Reading costs 1 cycle
 			_address_abs += _y_register;
+			_address_abs &= 0x00FF; // If a page cross occurs, it wraps into zero-page again
 			read = &R6502::read_memory;
 			write = &R6502::write_memory;
 			return 0;

@@ -206,11 +206,11 @@ namespace NES::CPU {
 	// Bit Test
 	u8 R6502::BIT() { // modifies flags, but does not change memory or registers. | A & memory | Bits 7 and 6 of the memory value are loaded directly into the negative and overflow flags
 		_data = read_memory(_address_abs);
-		_data &= _accumulator;
+		SetFlag(StateFlags::V, _data & 0x40);
+		SetFlag(StateFlags::N, _data & 0x80);
 
+		_data &= _accumulator;
 		SetFlag(StateFlags::Z, _data == 0);
-		SetFlag(StateFlags::V, _data & 0b01000000);
-		SetFlag(StateFlags::N, _data & 0b10000000);
 
 #if CPU_TEST
 		std::cout << "Bit Test for Status Register: " << "\n";
@@ -693,7 +693,7 @@ namespace NES::CPU {
 		_accumulator = read_memory(_address_abs);
 
 		SetFlag(StateFlags::Z, _accumulator == 0);
-		SetFlag(StateFlags::N, _accumulator & 0x80);
+		SetFlag(StateFlags::N, (_accumulator & 0x80) > 0);
 
 #if CPU_TEST
 		std::cout << "Accumulator: " << _accumulator << " " << hexString(_accumulator, 2) << "\n";
@@ -708,7 +708,7 @@ namespace NES::CPU {
 	u8 R6502::LDX() { // X = memory
 		_x_register = read_memory(_address_abs);
 		SetFlag(StateFlags::Z, _x_register == 0);
-		SetFlag(StateFlags::N, _x_register & 0x80);
+		SetFlag(StateFlags::N, (_x_register & 0x80) > 0);
 
 #if CPU_TEST
 		std::cout << "X Register: " << _x_register << " " << hexString(_x_register, 2) << "\n";
@@ -801,7 +801,7 @@ namespace NES::CPU {
 #endif
 
 		SetFlag(StateFlags::Z, _accumulator == 0);
-		SetFlag(StateFlags::Z, _accumulator & 0x80);
+		SetFlag(StateFlags::N, _accumulator & 0x80);
 
 #if CPU_TEST
 		std::cout << _accumulator << " " << hexString(_accumulator, 2) << "\n";
@@ -846,7 +846,8 @@ namespace NES::CPU {
 		std::cout << "Push Processor Status [PHP]: " << "\n";
 		std::cout << "Stack Pointer Before PHP: " << hexString(_stack_pointer + 1, 2) << "\n";
 		std::cout << "Status Register before Push: " << binString(_status_register, 8) << "\n";
-		_status_register = 0x00; // Extreme, but for testing
+		std::cout << "Data Before PHP: " << hexString(_data, 2) << "\n";
+		//_status_register = 0x00; // Extreme, but for testing -> causes Nestest.rom flag test error 0x13
 		std::cout << "Stack Pointer After PHP: " << hexString(_stack_pointer, 2) << "\n\n";
 
 		DisassembleRAM(0x01B0, 0x0200);
@@ -884,19 +885,20 @@ namespace NES::CPU {
 #endif
 
 		++_stack_pointer;
-		_data = read_memory(0x0100 + _stack_pointer) & 0xDF;
+		_data = read_memory(0x0100 + _stack_pointer);
 		_data |= StateFlags::U;
 
 		_buffer_value = (_data & StateFlags::I) >> 2;
 		_data &= ~StateFlags::I;
 		delay_assign = &R6502::assign_delay_interrupt_disable_change; // The effect of changing Interrupt Disable [I] flag is delayed 1 instruction, because the flag is changed after IRQ is polled, delaying the effect until IRQ is polled in the next instruction like with CLI and SEI.
 		
-		_status_register |= _data;
+		_status_register = _data;
 
 #if CPU_TEST
 		std::cout << "Pull Processor Status [PLP]: " << "\n";
 		std::cout << "Stack Pointer Before PLP: " << hexString(_stack_pointer - 1, 2) << "\n";
 		std::cout << "Status Register: " << binString(_status_register, 8) << "\n";
+		std::cout << "Data After PLP: " << hexString(_data, 2) << "\n";
 		std::cout << "Stack Pointer After PLP: " << hexString(_stack_pointer, 2) << "\n\n";
 
 		DisassembleRAM(0x01B0, 0x0200);
