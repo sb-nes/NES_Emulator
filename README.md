@@ -43,6 +43,7 @@ I can't seem to figure out the root of this problem, but it *plagues* my soul aw
 
 
 Fixed it after a whole day of brain-storming. The whole program was failing majorly due to BIT test setting the `N` and `V` Flags after performing the AND operation (*It was supposed to set the flags from the data read before performing the AND operation*). And Zero-Page with Offset addressing mode was supposed to wrap around, if it went past `0x00FF`. (Which I didn't implement at all)
+
 **TLDR; Two Problems, Bit test and Zero-Page(Offset) addressing created the major nightmare.**
 ![Fixed it Finally](https://github.com/sb-nes/NES_Emulator/blob/sane/images/MuchBetterTests.png)
 
