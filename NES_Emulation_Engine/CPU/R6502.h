@@ -117,87 +117,105 @@ namespace NES::CPU {
 		}
 
 		void clock() { // Per Clock Signal
-			
 			++_ticks;
-			if (_cycles == 0) {
-				assert(_cycles == 0);
-				_opcode = read_memory(_program_counter++);
+			if (!_dma_enabled) {
+				if (_cycles == 0) {
+					assert(_cycles == 0);
+					_opcode = read_memory(_program_counter++);
 
 #if OPCODE_DEBUG
-				std::cout << _ticks << " ";
-				std::cout << "0x" << hexString(_program_counter - 1, 4) << " ";
-				std::cout << "0x" << hexString(_opcode, 2) << " " << _lookup[_opcode >> 4][_opcode & 0x0F].name << " ";
+					std::cout << _ticks << " ";
+					std::cout << "0x" << hexString(_program_counter - 1, 4) << " ";
+					std::cout << "0x" << hexString(_opcode, 2) << " " << _lookup[_opcode >> 4][_opcode & 0x0F].name << " ";
 
-				if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMP) {
-					std::cout << "IMP ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMM) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IMM} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZP0) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZP0} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPX) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZPX} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPY) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZPY} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::REL) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {REL} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZX) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IZX} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZY) {
-					std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IZY} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABS) {
-					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABS} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABX) {
-					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABX} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABY) {
-					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABY} ";
-				}
-				else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IND) {
-					std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {IND} ";
-				}
+					if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMP) {
+						std::cout << "IMP ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IMM) {
+						std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IMM} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZP0) {
+						std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZP0} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPX) {
+						std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZPX} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ZPY) {
+						std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {ZPY} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::REL) {
+						std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {REL} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZX) {
+						std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IZX} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IZY) {
+						std::cout << "0x" << hexString(read_memory(_program_counter), 2) << " {IZY} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABS) {
+						std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABS} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABX) {
+						std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABX} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::ABY) {
+						std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {ABY} ";
+					}
+					else if ((this->_lookup[_opcode >> 4][_opcode & 0x0F].addrmode) == &R6502::IND) {
+						std::cout << "0x" << hexString(read_memory(_program_counter + 1), 2) << hexString(read_memory(_program_counter), 2) << " {IND} ";
+					}
 
 #endif // OPCODE_DEBUG
 
-				_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
-				u8 _cycles1 = (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
-				u8 _cycles2 = (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
-				
-				_cycles += (_cycles1 & _cycles2); // What?
+					_cycles = _lookup[_opcode >> 4][_opcode & 0x0F].cycles;
+					u8 _cycles1 = (this->*_lookup[_opcode >> 4][_opcode & 0x0F].addrmode)();
+					u8 _cycles2 = (this->*_lookup[_opcode >> 4][_opcode & 0x0F].opcode)();
 
-				(this->*delay_change)();
-				(this->*delay_assign)(); // fbrereto -> https://stackoverflow.com/questions/2898316/using-a-member-function-pointer-within-a-class
+					_cycles += (_cycles1 & _cycles2); // What?
+
+					(this->*delay_change)();
+					(this->*delay_assign)(); // fbrereto -> https://stackoverflow.com/questions/2898316/using-a-member-function-pointer-within-a-class
 
 #if OPCODE_DEBUG
-				std::cout << hexString(_accumulator, 2) << " " << hexString(_x_register, 2) << " " << hexString(_y_register, 2) << " " << hexString(_stack_pointer, 2) << " ";
-				std::cout << (GetFlag(StateFlags::N) != 0 ? "N" : ".");
-				std::cout << (GetFlag(StateFlags::V) != 0 ? "V" : ".");
-				std::cout << (GetFlag(StateFlags::U) != 0 ? "U" : ".");
-				std::cout << (GetFlag(StateFlags::B) != 0 ? "B" : ".");
-				std::cout << (GetFlag(StateFlags::D) != 0 ? "D" : ".");
-				std::cout << (GetFlag(StateFlags::I) != 0 ? "I" : ".");
-				std::cout << (GetFlag(StateFlags::Z) != 0 ? "Z" : ".");
-				std::cout << (GetFlag(StateFlags::C) != 0 ? "C" : ".") << "\n";
+					std::cout << hexString(_accumulator, 2) << " " << hexString(_x_register, 2) << " " << hexString(_y_register, 2) << " " << hexString(_stack_pointer, 2) << " ";
+					std::cout << (GetFlag(StateFlags::N) != 0 ? "N" : ".");
+					std::cout << (GetFlag(StateFlags::V) != 0 ? "V" : ".");
+					std::cout << (GetFlag(StateFlags::U) != 0 ? "U" : ".");
+					std::cout << (GetFlag(StateFlags::B) != 0 ? "B" : ".");
+					std::cout << (GetFlag(StateFlags::D) != 0 ? "D" : ".");
+					std::cout << (GetFlag(StateFlags::I) != 0 ? "I" : ".");
+					std::cout << (GetFlag(StateFlags::Z) != 0 ? "Z" : ".");
+					std::cout << (GetFlag(StateFlags::C) != 0 ? "C" : ".") << "\n";
 #endif // OPCODE_DEBUG
 
 #if CPU_TEST
-				--_instructions_count;
+					--_instructions_count;
 #endif // CPU_TEST
+				}
+
+				// wait for set time
+				--_cycles;
+			} else { 
+				// DMA is currently in progress...
+				// we request of you to wait 512 cycles.
+				// We regret your inconvinience!
+				if (_oam_dummy) {
+					if (_ticks % 2 == 1) _oam_dummy = false;
+				} else {
+					if (_ticks % 2 == 0) _bus.dma_read();
+					else {
+						_data_dummy = _bus.dma_write();
+						if (_data_dummy == 0x00) {
+							_dma_enabled = false;
+							_bus.dma_disable();
+							_oam_dummy = true;
+						}
+					}
+				}
 			}
-			
-			// wait for set time
-			--_cycles;
 
 			for (int i{ 0 }; i < 3; ++i) {
-				if (_bus.clock()) {
+				if (_bus.clock(_dma_enabled)) {
 					nmi();// NMI Interrupt
 				}
 			}
@@ -233,8 +251,8 @@ namespace NES::CPU {
 		[[nodiscard]]u16 get_instructions_count() { return _instructions_count; }
 #endif // CPU_TEST
 
-	private:
 		Bus		_bus{};
+	private:
 
 		// Registers -> X, Y, Status -> All 8-bits
 		u8		_x_register{ 0x00 };
@@ -258,6 +276,10 @@ namespace NES::CPU {
 		void	(R6502::*delay_assign)() = &R6502::do_nothing_like_its_nobodys_business; // Delay Interrupt Disable Change Function Pointer
 		void	(R6502::*delay_change)() = &R6502::do_nothing_like_its_nobodys_business; // Delay Interrupt Disable Change Function Pointer
 		u8		_buffer_value{ 0 };
+
+		bool	_dma_enabled{ false };
+		bool	_oam_dummy{ true };
+		u8		_data_dummy{ 0x00 };
 
 #if CPU_TEST
 		u16		_instructions_count{ 0 };

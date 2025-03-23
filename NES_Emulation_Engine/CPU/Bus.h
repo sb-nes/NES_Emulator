@@ -60,7 +60,8 @@ namespace NES::CPU {
 			_ram.disassemble_wram(start, end); 
 		}
 
-		bool clock() {
+		bool clock(bool &dma_trigger) {
+			dma_trigger = _dma_enabled;
 			_ppu.clock();
 			if (_ppu._nmi_trigger) {
 				_ppu._nmi_trigger = false;
@@ -68,6 +69,17 @@ namespace NES::CPU {
 			}
 			return false;
 		}
+
+		void dma_read() {
+			_dma_data = read(_dma_page << 8 | _dma_address);
+		}
+
+		u8 dma_write() {
+			_ppu._OAM_pointer[_dma_address] = _dma_data;
+			return ++_dma_address;
+		}
+
+		void dma_disable() { _dma_enabled = false; }
 
 		void get_ppu(PPU::R2C02*& ppu) {
 			ppu = &_ppu;
@@ -82,15 +94,25 @@ namespace NES::CPU {
 		// Reads Data from the Address Location on the Bus
 		[[nodiscard]]u8 read(u16 address, bool bReadOnly = false);
 
+		u8 controller[2];
 	private:
 		// Instance or whatever data is needed by CPU/PPU from the cartridge
-		bool										_cartridge_inserted{ false };
-		std::shared_ptr<NES::Cartridge::GameCard>	_cartridge;
+		bool														_cartridge_inserted{ false };
+		std::shared_ptr<NES::Cartridge::GameCard>					_cartridge;
 
 		// I/O Hardware
 		NES::PPU::R2C02												_ppu{};
 		NES::Memory::RAM											_ram{};
 		std::array<std::shared_ptr<NES::Input::Controller>, 2>		_controller;
+
+		// OAM stuff
+		u8															_dma_page{ 0x00 };
+		u8															_dma_address{ 0x00 };
+		u8															_dma_data{ 0x00 };
+
+		bool														_dma_enabled{ false };
+
+		u8 controller_state[2];
 	};
 
 } // NES CPU

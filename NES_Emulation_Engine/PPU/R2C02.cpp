@@ -16,24 +16,27 @@ namespace NES::PPU { // [Picture Processing Unit]
 	// Writes to the Address Bus
 	void R2C02::cpubus_write(u16 address, u8 data) {
 		switch (get_cpu_address(address)) {
-			case 0x0000: // PPUCTRL -> Control
+			case 0x0000: // PPUCTRL -> Control														| W
 				_ctrl_register.value = data; 
 				_t_register.nametable_x = _ctrl_register.nametable_select_x;
 				_t_register.nametable_y = _ctrl_register.nametable_select_y;
 			break; 
 
-			case 0x0001: // PPUMASK -> Mask
+			case 0x0001: // PPUMASK -> Mask															| W
 				_mask_register.value = data; 
 			break; 
 
-			case 0x0002: // PPUSTATUS -> Status
-				// Read-Only
+			case 0x0002: break; // PPUSTATUS -> Status												| R
+
+			case 0x0003: // OAMADDR -> [Object Attribute Memory] OAM address						| W
+				_address_oam = data;
 			break; 
 
-			case 0x0003: break; // OAMADDR -> [Object Attribute Memory] OAM address
-			case 0x0004: break; // OAMDATA -> [Object Attribute Memory] OAM data
+			case 0x0004: // OAMDATA -> [Object Attribute Memory] OAM data							| R/W
+				_OAM_pointer[_address_oam] = data;
+			break;
 
-			case 0x0005: // PPUSCROLL -> Scroll
+			case 0x0005: // PPUSCROLL -> Scroll														| W
 				if (_w_register == 0) {
 					_x_register = data & 0x07;
 					_t_register.coarse_x = data >> 3;
@@ -45,7 +48,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 				}
 			break; 
 
-			case 0x0006: // PPUADDR -> [Picture Processing Unit] Memory Address
+			case 0x0006: // PPUADDR -> [Picture Processing Unit] Memory Address						| W
 				if (_w_register == 0) { // store high address
 					_t_register.value = (u16)(data << 8) | (_t_register.value & 0x00FF);
 					_w_register = 1;
@@ -56,7 +59,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 				}
 			break; 
 
-			case 0x0007: // PPUDATA -> [Picture Processing Unit] Memory Data
+			case 0x0007: // PPUDATA -> [Picture Processing Unit] Memory Data						| R/W
 				write(_v_register.value, data);
 				_v_register.value += (_ctrl_register.increment_mode ? 32 : 1);
 			break; 
@@ -74,7 +77,7 @@ namespace NES::PPU { // [Picture Processing Unit]
 			case 0x0000: break; // PPUCTRL -> Control												| W
 			case 0x0001: break; // PPUMASK -> Mask													| W
 
-			case 0x0002: // PPUSTATUS -> Status														| R/W
+			case 0x0002: // PPUSTATUS -> Status														| R
 
 #if PPU_TEST
 				_status_register.v_blank = 1; // for testing purposes | OLC's method
@@ -85,8 +88,12 @@ namespace NES::PPU { // [Picture Processing Unit]
 				_w_register = 0; // reset address read latch
 			break; 
 
-			case 0x0003: break; // OAMADDR -> [Object Attribute Memory] OAM address
-			case 0x0004: break; // OAMDATA -> [Object Attribute Memory] OAM data
+			case 0x0003: break; // OAMADDR -> [Object Attribute Memory] OAM address					| W
+
+			case 0x0004: // OAMDATA -> [Object Attribute Memory] OAM data							| R/W
+				data = _OAM_pointer[_address_oam];
+			break; 			
+
 			case 0x0005: break; // PPUSCROLL -> Scroll												| W
 			case 0x0006: break;  // PPUADDR -> [Picture Processing Unit] Memory Address				| W
 

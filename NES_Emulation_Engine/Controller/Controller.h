@@ -19,9 +19,10 @@ namespace NES::Input {
 		void reset() { _register = 0x00; }
 		void set(u8 value) { _register = value; }
 
+		u8			_register{ 0x00 }; // 4021 8-bit Shift Register
 	protected:
 		u8			_id{ 0 };
-		u8			_register{ 0x00 }; // 4021 8-bit Shift Register
+		u8			_register_image{ 0x00 }; // 4021 8-bit Shift Register
 		u8			_strobe_latch{ 0 }; // D0 shared by both controllers
 		bool		_read_mode{ false };
 	};

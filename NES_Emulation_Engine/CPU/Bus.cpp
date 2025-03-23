@@ -35,12 +35,17 @@ namespace NES::CPU {
 					_cartridge->cpu_write(address, data);
 				} else { // $4000-401F I/O Registers
 
-
-					if (address == 0x4016 || address == 0x4017) {
-						_controller[0]->clock();
-						_controller[0]->write(address, data & 0x01);
-						_controller[1]->clock();
-						_controller[1]->write(address, data & 0x01);
+					if (address == 0x4014) {
+						_dma_page = data;
+						_dma_address = 0x00;
+						_dma_enabled = true;
+					}
+					else if (address == 0x4016 || address == 0x4017) { // TODO: Fix Controllers
+						//_controller[0]->clock();
+						//_controller[0]->write(address, data & 0x01);
+						//_controller[1]->clock();
+						//_controller[1]->write(address, data & 0x01); 
+						controller_state[address & 0x01] = controller[address & 0x01];
 					}
 				}
 			break; 
@@ -72,8 +77,12 @@ namespace NES::CPU {
 				else { // $4000-401F I/O Registers
 
 					if (address == 0x4016 || address == 0x4017) {
-						_controller[address & 0x01]->clock();
-						return _controller[address & 0x01]->read(address);
+						//_controller[address & 0x01]->clock();
+						//return _controller[address & 0x01]->read(address);
+
+						u8 data = (controller_state[address & 0x0001] & 0x80) > 0;
+						controller_state[address & 0x0001] <<= 1;
+						return data;
 					}
 				}
 			break;

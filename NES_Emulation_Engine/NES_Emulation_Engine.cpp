@@ -208,29 +208,9 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 		//Keyboard
 		case WM_KEYDOWN:
 			switch (wparam) {
-				case 'A':
-					_controller1 = _controller1 | 0x01;
-				break;
-				case 'B':
-					_controller1 = _controller1 | 0x02;
-				break;
-				case VK_RETURN:
-					_controller1 = _controller1 | 0x04;
-				break;
-				case VK_SPACE:
-					_controller1 = _controller1 | 0x08;
-				break;
-				case VK_UP:
-					_controller1 = _controller1 | 0x10;
-				break;
-				case VK_DOWN:
-					_controller1 = _controller1 | 0x20;
-				break;
-				case VK_LEFT:
-					_controller1 = _controller1 | 0x40;
-				break;
-				case VK_RIGHT:
-					_controller1 = _controller1 | 0x80;
+
+				case VK_ESCAPE:
+					DestroyWindow(hwnd);
 				break;
 
 				default:
@@ -238,6 +218,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 			}
 			return 0;
 
+		/*
 		case WM_KEYUP:
 			switch (wparam) {
 				case 'A':
@@ -269,6 +250,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) 
 				return DefWindowProc(hwnd, msg, wparam, lparam);
 			}
 			return 0;
+		*/
 
 		default: break;
 	}
@@ -367,14 +349,20 @@ int init_frame() {
 void update_frame() {
 
 	FrameTimer timer;
+
+	// is it a time related issue?
+	_nes_instance._bus.controller[0] = 0x00;
+	_nes_instance._bus.controller[0] |= GetKeyState('A') & 0x8000 ? 0x80 : 0x00;
+	_nes_instance._bus.controller[0] |= GetKeyState('B') & 0x8000 ? 0x40 : 0x00;
+	_nes_instance._bus.controller[0] |= GetKeyState(VK_RETURN) & 0x8000 ? 0x20 : 0x00;
+	_nes_instance._bus.controller[0] |= GetKeyState(VK_SPACE) & 0x8000 ? 0x10 : 0x00;
+	_nes_instance._bus.controller[0] |= GetKeyState(VK_UP) & 0x8000 ? 0x08 : 0x00;
+	_nes_instance._bus.controller[0] |= GetKeyState(VK_DOWN) & 0x8000 ? 0x04 : 0x00;
+	_nes_instance._bus.controller[0] |= GetKeyState(VK_LEFT) & 0x8000 ? 0x02 : 0x00;
+	_nes_instance._bus.controller[0] |= GetKeyState(VK_RIGHT) & 0x8000 ? 0x01 : 0x00;
 	
 	// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
 	while (!_ppu_instance->_frame_scan_complete) {
-		if (_controller[0]->get_latch()) {
-			_controller[0]->set(_controller1);
-			_controller[1]->set(_controller2);
-		}
-
 		_nes_instance.clock();
 	}
 

@@ -13,6 +13,7 @@ namespace NES::Input {
 
 	bool Standard::write(u16 address, u8 data) {
 		_strobe_latch = data;
+		if (_read_mode) _register_image = _register;
 		return true;
 	}
 

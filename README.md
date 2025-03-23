@@ -8,7 +8,7 @@
 5. PPU/R-MOS-2C02 - Testing | Failing
 6. Output Window - Testing | Somehow Passing
 7. Timing - `Passed`
-8. Basic NES Controller - `Passed`
+8. Basic NES Controller - `Testing` | holding keys doesn't works all the time and there's a key rollover error.
 
 
 ![palette read 1](https://github.com/sb-nes/NES_Emulator/blob/sane/images/emu1.gif)
@@ -52,7 +52,17 @@ I opened task manager to see that, it was using my GPU. On a Win32 window, witho
 
  ***SURPRISED PIKACHU FACE***
 
-![Fixed it Finally](https://github.com/sb-nes/NES_Emulator/blob/sane/images/GPUonGDI.png)
+![Task my Manager](https://github.com/sb-nes/NES_Emulator/blob/sane/images/GPUonGDI.png)
+
+[Debugging Funny Outputs](https://www.gridbugs.org/nes-emulator-debugging/)
+
+This error was caused by trying to create pixels at the cycle 0 of a scanline.
+
+![Fixed Glitch](https://github.com/sb-nes/NES_Emulator/blob/sane/images/BorderGlitch.png)
+
+Another glitch (image below): I have **no** idea why this happens, but the MESEN emulator also faces the same problem.
+
+![Common Glitch](https://github.com/sb-nes/NES_Emulator/blob/sane/images/RenderingAtBorder.png)
 
 #### Credit to javidx9 [not a clone of his olc_nes project] for his basic overview explanation of the Nintendo Entertainment System, NesHacker for his in-depth explanations and all the people behind the NesDev Wiki Reference Guide for it's documentations.
 

@@ -8,6 +8,6 @@
 #define NAMETABLE_TEST 0 // To test the Ricoh M6502 CPU.
 #define NAMETABLE_PRINT_TEST 0 // To test the Ricoh M6502 CPU.
 #define OPCODE_DEBUG 0 // To display the opcodes processed during execution.
-#define TIMING_DEBUG 1 // To display the timing of clock cycles during execution.
+#define TIMING_DEBUG 0 // To display the timing of clock cycles during execution.
 
-#define CONSOLE_DBG_OUT 1 // To create a console for debug output.
+#define CONSOLE_DBG_OUT 0 // To create a console for debug output.
