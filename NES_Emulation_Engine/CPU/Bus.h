@@ -12,7 +12,7 @@ namespace NES::CPU {
 	class Bus {
 	public:
 		Bus() {
-			_cartridge = Cartridge::load_file("C:/Users/shrey/source/repos/NES_Emulator/x64/Debug/test.nes");
+			_cartridge = Cartridge::load_file("C:/Users/shrey/source/repos/sb-nes/NES_Emulator/x64/Debug/test.nes");
 			_cartridge_inserted = true;
 
 			_ppu.connect_card(_cartridge);

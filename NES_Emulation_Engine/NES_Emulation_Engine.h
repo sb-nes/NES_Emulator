@@ -17,8 +17,8 @@
 //#define FRAME_PER_SECOND 1.0f/67.0f // WTF is this? how is this giving me 32 FPS sync limit
 #define FRAME_LIMITER 1
 
-#define WINDOWS_GDI 1
-#define GLFW 1
+#define WINDOWS_GDI 0
+#define GLFW 0
 
 int _frameCount{ 0 };
 float _avgTime;

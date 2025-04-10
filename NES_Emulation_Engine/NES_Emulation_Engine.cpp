@@ -1,4 +1,7 @@
-// NES_Emulation_Engine.cpp : 'main' function -> Program Execution Entry Point.
+// NES_Emulation_Engine.cpp : 
+// 'WinMain' function -> Windows Subsystem Program Execution Entry Point.
+// 'main' function -> Console Program Execution Entry Point. -> For OpenGL
+// 'SDL_AppInit' function -> SDL Program Execution Entry Point.
 
 #include <iostream>
 #include <crtdbg.h>
@@ -931,37 +934,82 @@ int main(void) {
 	return 0;
 }
 
-#else
+#else // Platform Independant Implementation [SDL3]
 
-int main()
+#define SDL_MAIN_USE_CALLBACKS 1  // use the callbacks instead of main()
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+
+// Forward Declarations
+void attach_console();
+void print_cpu_status();
+void print_acuumulator();
+void print_x_register();
+void print_y_register();
+void print_stack_pointer();
+void print_program_counter();
+
+void print_status_value(u8 value, int x_pos, int y_pos, u8 scale, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int char_index = 0, int line_index = 0);
+void print_hex_value(u8 value, int x_pos, int y_pos, u8 scale, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int char_index = 0, int line_index = 0);
+
+static SDL_Window* window = NULL;
+static SDL_Renderer* renderer = NULL;
+
+/* This function runs once at startup. */
+SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
-#if _DEBUG
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); //Google it, dammit
-#endif
-
-    std::cout << "Initializing!\n\n";
-
-    CPU::R6502* Cpu = new CPU::R6502();
-
-    Cpu->SetBus(new CPU::Bus());
-    Cpu->reset();
-
-#if CPU_TEST
-    Cpu->set_instructions_count(88);
-
-    for (; Cpu->get_instructions_count() > 0;) {
-        Cpu->clock();
-    }
-    Cpu->DisassembleRAM(0, 40);
-#else
-
-#endif // CPU_TEST
-
-    delete Cpu;
-
-    std::cout << "Done...\n Press Any Key To Continue! \n";
-    getchar();
+	/* Create the window */
+	if (!SDL_CreateWindowAndRenderer("Hello World", 800, 600, SDL_WINDOW_BORDERLESS, &window, &renderer)) {
+		SDL_Log("Couldn't create window and renderer: %s", SDL_GetError());
+		return SDL_APP_FAILURE;
+	}
+	return SDL_APP_CONTINUE;
 }
+
+/* This function runs when a new event (mouse input, keypresses, etc) occurs. */
+SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
+{
+	if (event->type == SDL_EVENT_KEY_DOWN ||
+		event->type == SDL_EVENT_QUIT) {
+		return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+	}
+	return SDL_APP_CONTINUE;
+}
+
+/* This function runs once per frame, and is the heart of the program. */
+SDL_AppResult SDL_AppIterate(void* appstate)
+{
+	const char* message = "Hello World!";
+	int w = 0, h = 0;
+	float x, y;
+	const float scale = 4.0f;
+
+	/* Center the message and scale it up */
+	SDL_GetRenderOutputSize(renderer, &w, &h);
+	SDL_SetRenderScale(renderer, scale, scale);
+	x = ((w / scale) - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE * SDL_strlen(message)) / 2;
+	y = ((h / scale) - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE) / 2;
+
+	/* Draw the message */
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderClear(renderer);
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	SDL_RenderDebugText(renderer, x, y, message);
+	SDL_RenderPresent(renderer);
+
+	return SDL_APP_CONTINUE;
+}
+
+/* This function runs once at shutdown. */
+void SDL_AppQuit(void* appstate, SDL_AppResult result) {
+
+}
+
+//int main() {
+//
+//    std::cout << "Done...\n Press Any Key To Continue! \n";
+//    getchar();
+//}
 
 #endif //_WIN64
 
