@@ -1,5 +1,11 @@
 # NES_Emulator
 
+## Build Instructions:
+
+After cloning the repository, make sure to add `glew` [2.2.0 | rename the folder as 'glew.2.2.0' or update the include, lib and post-build 'xcopy' command location in project properties] and `sdl`[3.2.10 | rename the folder as 'sdl.3.2.10' or update the include, lib and post-build 'xcopy' command location in project properties] to the packages folder in solution directory.
+
+If you decide to use newer versions of `glew` and/or `sdl`, make sure to update the include, lib and post-build 'xcopy' command location in project properties.
+
 ## Currently Tested:
 1. SRAM/WRAM - `Passed`
 2. CPU/R-MOS-6502 - `Passed`
