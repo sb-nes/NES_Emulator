@@ -6,6 +6,8 @@ After cloning the repository, make sure to add `glew` [2.2.0 | rename the folder
 
 If you decide to use newer versions of `glew` and/or `sdl`, make sure to update the include, lib and post-build 'xcopy' command location in project properties.
 
+[Also, Remember to add a `Mapper 0` game as 'test.nes' to the debug output directory or change the location in the constructor of `Bus.h`]
+
 ## Currently Tested:
 1. SRAM/WRAM - `Passed`
 2. CPU/R-MOS-6502 - `Passed`
