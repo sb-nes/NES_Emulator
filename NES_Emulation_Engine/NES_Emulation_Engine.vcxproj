@@ -14,6 +14,7 @@
     <ClCompile Include="AudioEngine.cpp" />
     <ClCompile Include="Cartridge\iNES1.0\M_000_NROM.cpp" />
     <ClCompile Include="Controller\Standard.cpp" />
+    <ClCompile Include="CPU\APU.cpp" />
     <ClCompile Include="CPU\Bus.cpp" />
     <ClCompile Include="CPU\R6502.cpp" />
     <ClCompile Include="Memory\RAM.cpp" />

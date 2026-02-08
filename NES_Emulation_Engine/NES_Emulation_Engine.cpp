@@ -45,9 +45,11 @@ palette															_palette;
 nametable														_nametable;
 int																_count{ 0 };
 unsigned int													_tick{ 0 };
-bool															_dispatched{ false };
+bool															_dispatched_nes{ false };
+bool															_dispatched_audio{ false };
 std::mutex														_nes_mutex;
 std::future<void>												_nes;
+std::future<void>												_audio;
 
 bool createNES() {
 	try {
@@ -490,7 +492,12 @@ void update_frame() {
 	UpdateWindow(window);
 
 	_ppu_instance->_frame_scan_complete = false;
-	_dispatched = false;
+	_dispatched_nes = false;
+}
+
+void update_audio() {
+	_audio_instance.output_audio();
+	_dispatched_audio = false;
 }
 
 // Subsystem Windows: Entry Point
@@ -538,12 +545,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 			}
 
 			// TODO: dispatch to another thread later after testing if ppu works 
-			if (!_dispatched) {
-				_dispatched = true;
+			if (!_dispatched_nes) {
+				_dispatched_nes = true;
 				_nes = std::async(std::launch::async ,update_frame);
 			}
-
-			// update_frame();
+			if (!_dispatched_audio) {
+				_dispatched_audio = true;
+				_audio = std::async(std::launch::async, update_audio);
+			}
+			//update_frame();
+			//_audio_instance.output_audio();
 
 			// Any edits to the frame buffer should be done here in the main loop [Not in the WM_PAINT window procedure]
 

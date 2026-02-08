@@ -12,6 +12,7 @@
     <ClCompile Include="Memory\RAM.cpp" />
     <ClCompile Include="Controller\Standard.cpp" />
     <ClCompile Include="AudioEngine.cpp" />
+    <ClCompile Include="CPU\APU.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU\Bus.h" />

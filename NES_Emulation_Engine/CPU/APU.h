@@ -1,12 +1,9 @@
-// Bisqwit's NES Emulator
-// 
-// 
-// Fill Buffer
-// 
-
 #pragma once
+
 #include "../Common/CommonHeaders.h"
 #include "../Utilities/RegBit.h"
+
+#include "../Cartridge/Cartridge.h"
 
 namespace NES::Audio {
 
@@ -18,11 +15,9 @@ namespace NES::Audio {
 	static const u16 noise_periods[16] = { 2,4,8,16,32,48,64,80,101,127,190,254,381,508,1017,2034 };
 	static const u16 dmc_periods[16] = { 428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54 };
 
-	static float sample_out[8196] = {0};
-	static int sc{ 0 };
-	static bool s_ready{ false };
+	static constexpr int max_buffer_size = 1000; // for the output
 
-	static std::ofstream audio_out;
+	static bool s_ready{ false };
 
 	class APU {
 	public:
@@ -118,6 +113,9 @@ namespace NES::Audio {
 
 		struct { short lo, hi; } hz240counter = { 0,0 };
 
+		int sample_count = 0;
+		s16 output_buffer[max_buffer_size];
+
 		// idx -> APU Address
 		void write(u8 idx, u8 value) {
 			channel& ch = channels[(idx / 4) % 5]; // % 5 is used to limit the range to [0,4] | idx is address, here used to calculate the channel no.
@@ -200,56 +198,25 @@ namespace NES::Audio {
 			return res;
 		}
 
-		void clock() {
-			// divide cpu clock by 7457.5 to get a 240hz, which controls certain events
-			if ((hz240counter.lo += 2) >= 14915) {
-				hz240counter.lo -= 14915;
-				if (++hz240counter.hi >= 4 + five_cycle_divider) hz240counter.hi = 0;
+		void clear_output() { sample_count = 0; }
+		void clock();
 
-				// 60 Hz interval: irq | IRQ is not invoked in five-cycle mode (48Hz)
-				if (!irq_disable && !five_cycle_divider && hz240counter.hi == 0) {
-					periodic_irq = irq_call = true;
-				}
+		bool irq_call{ false };
 
-				// Some events are invoked at 96Hz or 120Hz rate. Others at 192Hz or 240Hz.
-				bool half_clock = (hz240counter.hi & 5) == 1, full_clock = hz240counter.hi < 4;
-
-				for (unsigned c{ 0 }; c < 4;++c) {
-					channel& ch = channels[c];
-					int wl = ch.reg.wave_length;
-
-					// Length Tick (All channels except DMC, but different disable bit for TRI ch)
-					if (half_clock && ch.length_counter && !(c == 2 ? ch.reg.linear_counter_disable : ch.reg.length_counter_disable)) ch.length_counter -= 1; // Decrement
-
-					// Sweep Tick (SQR ch only)
-					if (half_clock && c < 2 && count(ch.sweep_delay, ch.reg.sweep_rate)) {
-						if (wl >= 8 && ch.reg.sweep_enable && ch.reg.sweep_shift) {
-							int s = wl >> ch.reg.sweep_shift, d[4] = { s,s,~s,-s };
-							wl += d[ch.reg.sweep_decrease * 2 + c];
-							if (wl < 0x800) ch.reg.wave_length = wl;
-						}
-					}
-
-					// Linear Tick (TRI ch only)
-					if (full_clock && c == 2) {
-						ch.linear_counter = ch.reg.linear_counter_disable ? ch.reg.linear_counter_init : (ch.linear_counter > 0 ? ch.linear_counter - 1 : 0);
-					}
-
-					// Envelope Tick (SQR and Noise ch only)
-					if (full_clock && c != 2 && count(ch.env_delay, ch.reg.env_decay_rate)) {
-						if (ch.envelope > 0 || ch.reg.env_decay_loop_enable)
-							ch.envelope = (ch.envelope - 1) & 15;
-					}
-				}
-			}
+		double playbackTime = 0.0;
+		const float TONE_HZ = 440;
+		const s16 TONE_VOLUME = 6000;
+		
+		APU() {
+			// initialize wavetables
 		}
 
-			bool irq_call{ false };
 		private:
 
 			bool five_cycle_divider = false, irq_disable = false;
 			bool channels_enable[5] = { false };
 			bool periodic_irq = false, dmc_irq = false;
+
 			bool count(int& v, int reset) {
 				return --v < 0 ? (v = reset), true : false;
 			}

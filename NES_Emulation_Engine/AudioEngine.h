@@ -20,7 +20,11 @@ public:
 	void destroy_engine();
 	void output_audio();
 
-	AudioEngine(NES::CPU::R6502& r6502) : _R6502(r6502) {}
+	AudioEngine(NES::CPU::R6502& r6502) : _R6502(r6502), _bus(r6502._bus) {}
+
+	double playbackTime = 0.0;
+	const float TONE_HZ = 440;
+	const s16 TONE_VOLUME = 3000;
 	
 private:
 #ifdef WINDOWS_GDI
@@ -28,12 +32,14 @@ private:
 	IAudioRenderClient*		_audioRenderClient;
 
 	UINT32					_bufferSizeInFrames;
+	s16						_last_know_state{0};
 
-	void queue_audio();
+	void queue_audio(UINT32 available_frames);
 #else
 	SDL_AudioStream*		_stream { NULL };
 	SDL_AudioDeviceID		_device;
 #endif
 	int						_avg_queue_size;
 	NES::CPU::R6502&		_R6502;
+	NES::CPU::Bus&			_bus;
 };

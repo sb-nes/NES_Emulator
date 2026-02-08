@@ -3,6 +3,12 @@
 #include "Common/CommonHeaders.h"
 #include <cstdio> // For Legacy Code
 
+#if AUDIO_TEST_B or AUDIO_TEST_C
+#define _USE_MATH_DEFINES
+#include <math.h> // for sin()
+#endif // AUDIO_TEST_B
+
+
 namespace { 
 	// Using constexpr rather than #define, so that we can calculate once and store it for later use, rather than
 	// just replace the code to re-calculate everytime I need a value. [Predetermined value]
@@ -10,7 +16,7 @@ namespace {
 	constexpr float			max_frequency_difference = 0.02f;
 	constexpr int			target_queue_size = sample_rate / 60 * 3; // for 48kHz sample rate, it is 2400.
 
-	constexpr float			target_buffer_padding = 1 / 187.5f;
+	constexpr float			target_buffer_padding = 1 / 50.f;
 	// How much padding we want our sound buffer to have after writing to it. Needs to be enough so that the playback doesn't reach garbage data
 	// but we get less latency the lower it is (i.e. how long does it take between pressing jump and hearing the sound effect)
 	// Try setting this to e.g. 1/250.f to hear what happens when we're not writing enough data to stay ahead of playback!
@@ -115,26 +121,56 @@ void AudioEngine::destroy_engine(){
 }
 
 #ifdef WINDOWS_GDI
-void AudioEngine::queue_audio() {
+void AudioEngine::queue_audio(UINT32 available_frames) {
 	HRESULT hr;
-	int16_t* buffer;
-	UINT32 numFramesToWrite = 1;
+	s16* buffer;
+	UINT32 numFramesToWrite = _bus._apu.sample_count;
 
+#if AUDIO_TEST_B
+	hr = _audioRenderClient->GetBuffer(available_frames, (BYTE**)(&buffer));
+	assert(hr == S_OK);
+
+	for (UINT32 frameIndex = 0; frameIndex < available_frames; ++frameIndex) {
+		float amplitude = (float)sin(playbackTime * 2 * M_PI * TONE_HZ);
+		int16_t y = (int16_t)(TONE_VOLUME * amplitude);
+
+		*buffer++ = y; // left
+
+		playbackTime += 1.f / sample_rate;
+	}
+
+	hr = _audioRenderClient->ReleaseBuffer(available_frames, 0);
+	assert(hr == S_OK);
+#elif AUDIO_TEST_C
+	hr = _audioRenderClient->GetBuffer(numFramesToWrite, (BYTE**)(&buffer));
+	assert(hr == S_OK);
+	int16_t y = 0;
+	for (UINT32 frameIndex = 0; frameIndex < numFramesToWrite; ++frameIndex) {
+		float amplitude = (float)sin(playbackTime * 2 * M_PI * TONE_HZ);
+		y = (int16_t)(TONE_VOLUME * amplitude);
+
+		*buffer++ = y; // left
+
+		playbackTime += 1.f / 5000;
+	}
+	_last_know_state = y;
+
+	hr = _audioRenderClient->ReleaseBuffer(numFramesToWrite, 0);
+	assert(hr == S_OK);
+#else
 	// Assign Buffer's address into *buffer
 	hr = _audioRenderClient->GetBuffer(numFramesToWrite, (BYTE**)(&buffer));
 	assert(hr == S_OK);
-
 	// Fill Buffer
-
-	//for (UINT32 frameIndex = 0; frameIndex < numFramesToWrite; ++frameIndex) {
-	//	*buffer++ = wavSamples[wavPlaybackSample++]; // Left
-	//	*buffer++ = wavSamples[wavPlaybackSample++]; // Right
-	//	wavPlaybackSample %= numWavSamples; // Loop if we reach end of wav file
-	//}
-
+	for (UINT32 i = 0; i < numFramesToWrite; ++i) {
+		*buffer++ = _bus._apu.output_buffer[i]; // Left
+	}
 	// Release Buffer
 	hr = _audioRenderClient->ReleaseBuffer(numFramesToWrite, 0);
 	assert(hr == S_OK);
+#endif // AUDIO_TEST_C
+
+	
 }
 #endif
 
@@ -157,12 +193,15 @@ void AudioEngine::output_audio(){
 	int wavPlaybackSample = 0;
 	
 	UINT32 targetBufferPadding = UINT32(_bufferSizeInFrames * target_buffer_padding);  // 96000 / 187.5 = 512 Frames or Block Size. Should be constant, so TODO: make it calculate once.
-	UINT32 available_Frames = targetBufferPadding - bufferPadding;
+	UINT32 available_frames = targetBufferPadding - bufferPadding;
 
 	if (bufferPadding > targetBufferPadding * 2) { // Skip Frame
-	} else { queue_audio(); }
+	} else { 
+		queue_audio(available_frames); 
+	}
 
-	// TODO: clear APU's buffer 
+	// TODO: clear APU's buffer
+	_bus._apu.clear_output();
 #else
 	// Exponential moving average of audio queue size
 	int queue_size = SDL_GetQueuedAudioSize(audio_device) / sizeof(int16_t);

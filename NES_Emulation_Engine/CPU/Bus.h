@@ -97,7 +97,7 @@ namespace NES::CPU {
 		// Reads Data from the Address Location on the Bus
 		[[nodiscard]]u8 read(u16 address, bool bReadOnly = false);
 
-		u8 controller[2];
+		u8															controller[2];
 		NES::Audio::APU												_apu{};
 	private:
 		// Instance or whatever data is needed by CPU/PPU from the cartridge
