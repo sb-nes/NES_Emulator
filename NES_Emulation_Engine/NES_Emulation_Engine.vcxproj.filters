@@ -11,6 +11,7 @@
     <ClCompile Include="Memory\VRAM.cpp" />
     <ClCompile Include="Memory\RAM.cpp" />
     <ClCompile Include="Controller\Standard.cpp" />
+    <ClCompile Include="AudioEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU\Bus.h" />
@@ -25,12 +26,16 @@
     <ClInclude Include="Cartridge\Mapper.h" />
     <ClInclude Include="Cartridge\iNES1.0\M_000_NROM.h" />
     <ClInclude Include="Cartridge\MapperTypes.h" />
-    <ClInclude Include="Common\Test.h" />
+    <ClInclude Include="Common\Tests.h" />
     <ClInclude Include="Common\CpuTest.h" />
     <ClInclude Include="Memory\VRAM.h" />
     <ClInclude Include="Resources\resource.h" />
     <ClInclude Include="NES_Emulation_Engine.h" />
     <ClInclude Include="Controller\Controller.h" />
+    <ClInclude Include="CPU\APU.h" />
+    <ClInclude Include="Utilities\RegBit.h" />
+    <ClInclude Include="AudioEngine.h" />
+    <ClInclude Include="GlobalSwitches.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\NES_Emulation.rc" />

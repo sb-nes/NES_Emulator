@@ -9,6 +9,7 @@
 #include <future>
 #include <chrono>
 
+#include "AudioEngine.h"
 #include "CPU/R6502.h"
 #include "NES_Emulation_Engine.h"
 
@@ -32,6 +33,7 @@ namespace {
 
 CPU::R6502														_nes_instance{};
 PPU::R2C02*														_ppu_instance{};
+AudioEngine														_audio_instance(_nes_instance);
 display															_display;
 u8																_controller1{ 0x00 };
 u8																_controller2{ 0x00 };
@@ -48,10 +50,9 @@ std::mutex														_nes_mutex;
 std::future<void>												_nes;
 
 bool createNES() {
-	std::cout << "\nCreating NES Hardware Instance!" << std::endl;
 	try {
-
 		_nes_instance.reset();
+		if (!_audio_instance.initialize_engine()) { return -1; }
 
 #if CPU_TEST
 		_nes_instance.set_instructions_count(88);
@@ -67,11 +68,11 @@ bool createNES() {
 #endif // CPU_TEST
 	}
 	catch (const std::exception&) {
-		std::cout << "Failed...\n\n";
+		std::cout << "Failed To Initialize NES...\n\n";
 		return false;
 	}
 
-	std::cout << "Initialized H/W...\n\n";
+	std::cout << "Initialized NES H/W...\n\n";
 	return true;
 }
 
@@ -444,7 +445,7 @@ void update_frame() {
 	// Output Display
 	_display = _ppu_instance->get_render_screen();
 	for (int y = 0; y < 240; ++y) { // Each Scanline
-		for (int x = 0; x < 256; ++x) { // Each Pixel
+		for (int x = 0; x < 255; ++x) { // Each Pixel
 			u8 pixel = _display[239 - y][x];
 			u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
 
@@ -936,80 +937,304 @@ int main(void) {
 
 #else // Platform Independant Implementation [SDL3]
 
-#define SDL_MAIN_USE_CALLBACKS 1  // use the callbacks instead of main()
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 
-// Forward Declarations
-void attach_console();
-void print_cpu_status();
-void print_acuumulator();
-void print_x_register();
-void print_y_register();
-void print_stack_pointer();
-void print_program_counter();
+static SDL_Window*			_window{ NULL };
+static SDL_Renderer*		_renderer{ NULL };
+static SDL_Surface*			_surface{ NULL };
 
-void print_status_value(u8 value, int x_pos, int y_pos, u8 scale, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int char_index = 0, int line_index = 0);
-void print_hex_value(u8 value, int x_pos, int y_pos, u8 scale, u32 colour = 0x00FFFFFF, u32 bg_colour = 0x00000000, int char_index = 0, int line_index = 0);
+char _hex_value[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+char _status_value[] = {'C','Z','I','D','B','U','V','N',' '};
 
-static SDL_Window* window = NULL;
-static SDL_Renderer* renderer = NULL;
+static std::string hex(u32 value, int size) {
+	std::string outstr;
+	while (size > 0) {
+		outstr = _hex_value[(value & 0x000F)] + outstr;
+		value >>= 4;
+		--size;
+	}
+	return "0x" + outstr;
+}
 
-/* This function runs once at startup. */
-SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
-{
-	/* Create the window */
-	if (!SDL_CreateWindowAndRenderer("Hello World", 800, 600, SDL_WINDOW_BORDERLESS, &window, &renderer)) {
+static std::string stat_set(u32 value) {
+	int size = 8;
+	std::string outstr;
+	while (size > 0) {
+		outstr = _status_value[(value & 0b00000001) ? size - 1 : 8] + outstr;
+		value >>= 1;
+		--size;
+	}
+	return outstr;
+}
+
+static std::string stat_unset(u32 value) {
+	int size = 8;
+	std::string outstr;
+	while (size > 0) {
+		outstr = _status_value[(value & 0b00000001) ? 8 : size - 1] + outstr;
+		value >>= 1;
+		--size;
+	}
+	return outstr;
+}
+
+bool init_sdl() { 
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+	if (!SDL_CreateWindowAndRenderer("NES Emulator", SCREEN_WIDTH * RENDER_SCALE_MULTIPLIER, SCREEN_HEIGHT * RENDER_SCALE_MULTIPLIER, NULL, &_window, &_renderer)) {
 		SDL_Log("Couldn't create window and renderer: %s", SDL_GetError());
-		return SDL_APP_FAILURE;
+		return false;
 	}
-	return SDL_APP_CONTINUE;
+	SDL_Log("Window Width: %d | Window Height: %d", SCREEN_WIDTH * RENDER_SCALE_MULTIPLIER, SCREEN_HEIGHT * RENDER_SCALE_MULTIPLIER);
+
+	SDL_SetRenderScale(_renderer, RENDER_SCALE_MULTIPLIER, RENDER_SCALE_MULTIPLIER);
+	SDL_Log("Render Scale: %d", RENDER_SCALE_MULTIPLIER);
+
+	_surface = SDL_GetWindowSurface(_window);
+
+
+	return true;
 }
 
-/* This function runs when a new event (mouse input, keypresses, etc) occurs. */
-SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
-{
-	if (event->type == SDL_EVENT_KEY_DOWN ||
-		event->type == SDL_EVENT_QUIT) {
-		return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+void display_cpu() {
+	SDL_SetRenderScale(_renderer, RENDER_SCALE_MULTIPLIER, RENDER_SCALE_MULTIPLIER);
+
+	// Status Values
+	u8 status = _nes_instance.get_status_register();
+	SDL_SetRenderDrawColor(_renderer, 0, 255, 128, 255);
+	SDL_RenderDebugText(_renderer, 280, 20, stat_set(status).c_str());
+	SDL_SetRenderDrawColor(_renderer, 255, 0, 128, 255);
+	SDL_RenderDebugText(_renderer, 280, 20, stat_unset(status).c_str());
+
+	// Accumulator
+	u8 reg = _nes_instance.get_accumulator();
+	SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 255);
+	SDL_RenderDebugText(_renderer, 280, 30, hex(reg, 2).c_str());
+
+	//print_x_register();
+	reg = _nes_instance.get_x_register();
+	SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 255);
+	SDL_RenderDebugText(_renderer, 280, 40, hex(reg, 2).c_str());
+
+	//print_y_register();
+	reg = _nes_instance.get_y_register();
+	SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 255);
+	SDL_RenderDebugText(_renderer, 280, 50, hex(reg, 2).c_str());
+
+	//print_stack_pointer();
+	reg = _nes_instance.get_stack_pointer();
+	SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 255);
+	SDL_RenderDebugText(_renderer, 280, 60, hex(reg, 2).c_str());
+
+	//print_program_counter();
+	u16 pc = _nes_instance.get_program_counter();
+	SDL_SetRenderDrawColor(_renderer, 255, 255, 255, 255);
+	SDL_RenderDebugText(_renderer, 280, 70, hex(pc, 4).c_str());
+}
+
+// Clocks the CPU till the PPU is past v_blank and ready to display the output, then Update the Bitmap screen elements.
+void update_frame() {
+
+	FrameTimer timer;
+	const bool* key_state = SDL_GetKeyboardState(NULL);
+
+	// is it a time related issue?
+	_nes_instance._bus.controller[0] = 0x00;
+	_nes_instance._bus.controller[0] |= key_state[SDL_SCANCODE_A] ? 0x80 : 0x00;
+	_nes_instance._bus.controller[0] |= key_state[SDL_SCANCODE_B] ? 0x40 : 0x00;
+	_nes_instance._bus.controller[0] |= key_state[SDL_SCANCODE_RETURN] ? 0x20 : 0x00;
+	_nes_instance._bus.controller[0] |= key_state[SDL_SCANCODE_SPACE] ? 0x10 : 0x00;
+	_nes_instance._bus.controller[0] |= key_state[SDL_SCANCODE_UP] ? 0x08 : 0x00;
+	_nes_instance._bus.controller[0] |= key_state[SDL_SCANCODE_DOWN] ? 0x04 : 0x00;
+	_nes_instance._bus.controller[0] |= key_state[SDL_SCANCODE_LEFT] ? 0x02 : 0x00;
+	_nes_instance._bus.controller[0] |= key_state[SDL_SCANCODE_RIGHT] ? 0x01 : 0x00;
+
+	// Run CPU and PPU tasks -> does CPU have to wait for PPU to complete 3 cycles
+	while (!_ppu_instance->_frame_scan_complete) {
+		_nes_instance.clock();
 	}
-	return SDL_APP_CONTINUE;
+
+	// Get Sprites/Tiles, Palettes for debug purposes
+	_table1 = _ppu_instance->get_pattern_table(0, 0); // TODO: fix vector's wrong usage: don't copy, pass reference
+	_table2 = _ppu_instance->get_pattern_table(1, 2); // is it working properly?
+	_palette = _ppu_instance->get_palette();
+	
+	SDL_SetRenderDrawColor(_renderer, 0, 0, 0, 255);
+	SDL_RenderClear(_renderer);
+
+#if SCREEN_TEST // NICK WALTON -> Draw Pixels to a Win32 Window in C with GDI
+	static unsigned int p = 0;
+	if ((_frame.width * _frame.height * RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER) >= (SCREEN_WIDTH * SCREEN_HEIGHT * RENDER_SCALE_MULTIPLIER * RENDER_SCALE_MULTIPLIER)) { // to fix error on minimize
+		_frame.pixels[(p++) % (_frame.width * _frame.height)] = (rand() << 16) | (rand() << 8) | rand();
+		_frame.pixels[((rand() << 16) | (rand() << 8) | rand()) % (_frame.width * _frame.height)] = 0;
+	}
+#else
+
+	std::lock_guard<std::mutex> lock(_nes_mutex);
+
+	// Pattern Tables
+	SDL_SetRenderScale(_renderer, RENDER_SCALE_MULTIPLIER - 1, RENDER_SCALE_MULTIPLIER - 1);
+	for (int y = 0; y < 128 ; ++y) { // Each Scanline
+		for (int x = 0; x < 128; ++x) { // Each Pixel
+			u8 pixel1 = _table1[y][x];
+			u8 pixel2 = _table2[y][x]; // is there some unknown writing happening to pattern tables behind my back | or is it writing hi instead of lo
+
+			SDL_SetRenderDrawColor(_renderer, _pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].red, 
+											  _pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].green,	
+											  _pal_colour_lookup[pixel1 >> 4][pixel1 & 0x0F].blue, 255);
+			SDL_RenderPoint(_renderer, (384 * 2) + (float)x, 2 + (float)y);
+
+			SDL_SetRenderDrawColor(_renderer, _pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].red, 
+											  _pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].green, 
+											  _pal_colour_lookup[pixel2 >> 4][pixel2 & 0x0F].blue, 255);
+			SDL_RenderPoint(_renderer, (384 * 2) + (float)x, 132 + (float)y);
+		}
+	}
+
+	SDL_SetRenderScale(_renderer, RENDER_SCALE_MULTIPLIER, RENDER_SCALE_MULTIPLIER);
+
+#if NAMETABLE_TEST
+	// Nametable
+	_nametable = _ppu_instance->get_nametable(0);
+	u8 value{ 0 };
+	for (int y = 0; y < 30; ++y) { // Each Scanline
+		for (int x = 0; x < 32; ++x) { // Each Pixel
+			value = _nametable[(29 - y) * 32 + x];
+			print_hex_value(value & 0x0F, 0, 0, 1, 0x00FFFFFF, 0, x * 2 + 1, y * 2); // Low Hex
+			value >>= 4;
+			print_hex_value(value & 0x0F, 0, 0, 1, 0x00FFFFFF, 0, x * 2, y * 2); // Hi Hex
+		}
+	}
+#elif NAMETABLE_PRINT_TEST
+	_nametable = _ppu_instance->get_nametable(0);
+	u8 value{ 0 };
+	for (int j = 0; j < 30; ++j) { // Each Scanline
+		for (int i = 0; i < 32; ++i) { // Each Pixel
+			value = _nametable[(29 - j) * 32 + i];
+			u32 _tablex = (value & 0x0F) * 8;
+			u32 _tabley = ((value >> 4) & 0x0F) * 8 + 7;
+			for (int y{ 0 }; y < 8; ++y) {
+				for (int x{ 0 }; x < 8; ++x) {
+					u8 pixel = _table1[_tabley - y][_tablex + x];
+					u32 pixel_colour = (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].red << 16) | (_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green << 8) | _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue;
+
+					u32 x_temp = (i * 8 + x) * RENDER_SCALE_MULTIPLIER;
+					u32 y_temp = (j * 8 + y) * RENDER_SCALE_MULTIPLIER;
+
+					for (int h = 0; h < RENDER_SCALE_MULTIPLIER; ++h) {
+						for (int w = 0; w < RENDER_SCALE_MULTIPLIER; ++w) {
+							_frame.pixels[(y_temp + h) * _frame.width + x_temp + w] = pixel_colour;
+						}
+					}
+				}
+			}
+		}
+	}
+#else
+	// Output Display
+	_display = _ppu_instance->get_render_screen();
+	for (int y = 0; y < 239; ++y) { // Each Scanline | At Scanline 239, there's a line of something, which i haven't read about yet.
+		for (int x = 0; x < 256; ++x) { // Each Pixel
+			u8 pixel = _display[y][x];
+
+			SDL_SetRenderDrawColor(_renderer, _pal_colour_lookup[pixel >> 4][pixel & 0x0F].red,
+											  _pal_colour_lookup[pixel >> 4][pixel & 0x0F].green,
+											  _pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue, 255);
+			SDL_RenderPoint(_renderer, (float)x, (float)y);
+		}
+	}
+#endif
+	/*
+	// Colour Palette
+	u8 offset{ 0 };
+	int offset_y{ -2 };
+	SDL_SetRenderScale(_renderer, 4 * RENDER_SCALE_MULTIPLIER, 4 * RENDER_SCALE_MULTIPLIER);
+	for (u8 x{ 0 }; x < 32; ++x) {
+		offset = 0;
+		if (x % 4 == 0) offset = 1;
+		if (x % 16 == 0) offset_y += 2;
+
+		u8 pixel = _palette[get_palette_ram_address(x)];
+
+		SDL_SetRenderDrawColor(_renderer, _pal_colour_lookup[pixel >> 4][pixel & 0x0F].red,
+			_pal_colour_lookup[pixel >> 4][pixel & 0x0F].green,
+			_pal_colour_lookup[pixel >> 4][pixel & 0x0F].blue, 255);
+		SDL_RenderPoint(_renderer, 69 + x + offset - (16 * offset_y / 2), offset_y);
+	}
+
+	display_cpu();
+	*/
+#endif
+
+	// Render Next Frame
+	SDL_RenderPresent(_renderer);
+
+	_ppu_instance->_frame_scan_complete = false;
+	_dispatched = false;
 }
 
-/* This function runs once per frame, and is the heart of the program. */
-SDL_AppResult SDL_AppIterate(void* appstate)
-{
-	const char* message = "Hello World!";
-	int w = 0, h = 0;
-	float x, y;
-	const float scale = 4.0f;
+int main() {
 
-	/* Center the message and scale it up */
-	SDL_GetRenderOutputSize(renderer, &w, &h);
-	SDL_SetRenderScale(renderer, scale, scale);
-	x = ((w / scale) - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE * SDL_strlen(message)) / 2;
-	y = ((h / scale) - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE) / 2;
+#if _DEBUG | CONSOLE_DBG_OUT
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 
-	/* Draw the message */
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	SDL_RenderClear(renderer);
-	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-	SDL_RenderDebugText(renderer, x, y, message);
-	SDL_RenderPresent(renderer);
+	if (init_sdl()) { 
+		bool is_running{ true };
+		int i{ 0 };
+		short samples[8196];
+		const int minimum_audio = (48000 * sizeof(short)) / 2;  /* 48000 short samples per second. Half of that. */
+		SDL_Event event;
 
-	return SDL_APP_CONTINUE;
+		if (!createNES()) return 0;
+		_nes_instance.get_ppu(_ppu_instance);
+
+		while (is_running) {
+			while (SDL_PollEvent(&event)) { // Handle the events
+				if (event.type == SDL_EVENT_QUIT) {
+					// SDL_Quit() will handle the window destruction. If you started SDL with SDL_Init() you need not worry about closing the sub-systems. 
+					// If you explicitly called SDL_VideoInit(), then you must close sub-systems with SDL_QuitSubSystem. - HgMerk [https://stackoverflow.com/questions/30202771/application-using-sdl-exiting-on-any-keypress-it-shouldnt-be-though]
+					is_running = false;
+					SDL_Quit();
+				}
+
+				if (event.type == SDL_EVENT_KEY_DOWN) {
+					switch (event.key.key) {
+
+						case SDLK_ESCAPE:
+							is_running = false;
+							SDL_Quit();
+						break;
+
+						default: break;
+					}
+				}
+			}
+
+			if (!_dispatched) {
+				_dispatched = true;
+				//_nes = std::async(std::launch::async, update_frame);
+				update_frame();
+			}
+
+			/*
+			if (is_running) {
+				if (SDL_GetAudioStreamQueued(_stream) < minimum_audio && NES::Audio::s_ready) {
+					for (i = 0; i < SDL_arraysize(samples); i++) {
+						samples[i] = (short)ceil(NES::Audio::sample_out[i]);
+					}
+					SDL_PutAudioStreamData(_stream, samples, sizeof(samples));
+					NES::Audio::s_ready = false;
+				}
+			}
+			*/
+		}
+	
+	    std::cout << "Process Terminated...\n";
+	}
+
+	destroyNES();
+	return 0;
 }
-
-/* This function runs once at shutdown. */
-void SDL_AppQuit(void* appstate, SDL_AppResult result) {
-
-}
-
-//int main() {
-//
-//    std::cout << "Done...\n Press Any Key To Continue! \n";
-//    getchar();
-//}
 
 #endif //_WIN64
 

@@ -3,16 +3,19 @@
 #include "../Common/CommonHeaders.h"
 #include "../Memory/RAM.h"
 #include "../PPU/R2C02.h"
+#include "APU.h"
 #include "../Cartridge/Cartridge.h"
 #include "../Controller/Controller.h"
 #include "../Common/CpuTest.h"
 
 namespace NES::CPU {
+
 	// When the CPU attempts to read from an address which has no devices active, the result is open bus behavior.
 	class Bus {
 	public:
 		Bus() {
 			_cartridge = Cartridge::load_file("C:/Users/shrey/source/repos/sb-nes/NES_Emulator/x64/Debug/test.nes");
+			Audio::_cartridge_for_apu = _cartridge;
 			_cartridge_inserted = true;
 
 			_ppu.connect_card(_cartridge);
@@ -95,6 +98,7 @@ namespace NES::CPU {
 		[[nodiscard]]u8 read(u16 address, bool bReadOnly = false);
 
 		u8 controller[2];
+		NES::Audio::APU												_apu{};
 	private:
 		// Instance or whatever data is needed by CPU/PPU from the cartridge
 		bool														_cartridge_inserted{ false };

@@ -101,6 +101,7 @@ namespace NES::CPU {
 				SetFlag(StateFlags::B, true);
 				_address_abs = 0xFFFE;  // IRQ/BRK vector, which may point at a mapper's interrupt handler (or, less often, a handler for APU interrupts) | $FFFE–$FFFF
 				interrupt();
+				_bus._apu.irq_call = false;
 
 				_cycles = 7; // These take time...
 			}
@@ -215,10 +216,11 @@ namespace NES::CPU {
 			}
 
 			for (int i{ 0 }; i < 3; ++i) {
-				if (_bus.clock(_dma_enabled)) {
-					nmi();// NMI Interrupt
-				}
+				if (_bus.clock(_dma_enabled)) { nmi(); /* NMI Interrupt */ }
 			}
+
+			_bus._apu.clock();
+			if (_bus._apu.irq_call) irq();
 		}
 		/// END INTERRUPTS ///
 

@@ -1,28 +1,39 @@
 #pragma once
 
 #include "Resources/resource.h"
+#include "GlobalSwitches.h"
 
-//#define SCREEN_WIDTH 256
+#if WINDOWS_GDI
+#define SCREEN_HEIGHT 300
 #define SCREEN_WIDTH 526
-//#define SCREEN_HEIGHT 240
-#define SCREEN_HEIGHT 280
+#elif GLFW
+#define SCREEN_HEIGHT 240
+#define SCREEN_WIDTH 256
+#elif SHOW_NAMETABLE
+#define SCREEN_HEIGHT 240
+#define SCREEN_WIDTH 526
+#else
+#define SCREEN_HEIGHT 240
+#define SCREEN_WIDTH 256
+#endif
+
 #define NTSC_SCREEN_HEIGHT 262
 #define PAL_SCREEN_HEIGHT 312
 #define RENDER_SCALE_MULTIPLIER 2
 // Render Scale 4 will have wrapping issues if the maximum window size due to screen resolution is limited [1920x1080]
 
-#define CLOCK_TIME_IN_NANOSECONDS 1.f/1.79f
-//#define FRAME_PER_SECOND 1.0f/30.f // WTF is this? how is this giving me 32 FPS sync limit
-#define FRAME_PER_SECOND 1.0f/33.4f // WTF is this? how is this giving me 32 FPS sync limit
-//#define FRAME_PER_SECOND 1.0f/67.0f // WTF is this? how is this giving me 32 FPS sync limit
-#define FRAME_LIMITER 1
-
-#define WINDOWS_GDI 0
-#define GLFW 0
+// #define CLOCK_TIME_IN_NANOSECONDS 1.f/1.79f
+// #define FRAME_PER_SECOND 1.0f/30.f // WTF is this? how is this giving me 32 FPS sync limit
+// #define FRAME_PER_SECOND 1.0f/33.4f
 
 int _frameCount{ 0 };
 float _avgTime;
 int _frames_per_sec{ 0 };
+
+namespace {
+	constexpr float fps = 1.0f / 28.0f;
+	constexpr float clk_time = 1.f / 1.79f; // in nanoseconds
+} // Anonymous Namespace
 
 struct FrameTimer { // Everything's public
 	std::chrono::time_point<std::chrono::steady_clock> start, end;
@@ -37,7 +48,7 @@ struct FrameTimer { // Everything's public
 		duration = end - start;
 
 #if FRAME_LIMITER
-		while (duration.count() < FRAME_PER_SECOND) {
+		while (duration.count() < fps) {
 			end = std::chrono::high_resolution_clock::now();
 			duration = end - start;
 		}

@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AudioEngine.cpp" />
     <ClCompile Include="Cartridge\iNES1.0\M_000_NROM.cpp" />
     <ClCompile Include="Controller\Standard.cpp" />
     <ClCompile Include="CPU\Bus.cpp" />
@@ -27,9 +28,11 @@
     <ClInclude Include="Common\CommonHeaders.h" />
     <ClInclude Include="Cartridge\iNES1.0\M_000_NROM.h" />
     <ClInclude Include="Common\CpuTest.h" />
+    <ClInclude Include="GlobalSwitches.h" />
     <ClInclude Include="Common\PrimitiveTypes.h" />
-    <ClInclude Include="Common\Test.h" />
+    <ClInclude Include="Common\Tests.h" />
     <ClInclude Include="Controller\Controller.h" />
+    <ClInclude Include="CPU\APU.h" />
     <ClInclude Include="CPU\Bus.h" />
     <ClInclude Include="CPU\R6502.h" />
     <ClInclude Include="Cartridge\Mapper.h" />
@@ -40,7 +43,9 @@
     <ClInclude Include="PPU\PPU_Bus.h" />
     <ClInclude Include="PPU\R2C02.h" />
     <ClInclude Include="Resources\resource.h" />
+    <ClInclude Include="AudioEngine.h" />
     <ClInclude Include="Utilities\Disassembler.h" />
+    <ClInclude Include="Utilities\RegBit.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\NES_Emulation.rc" />
@@ -95,7 +100,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)packages\glew.2.2.0\include;$(SolutionDIr)packages\sdl.3.2.10\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)packages\glew.2.2.0\lib\Release\x64;$(SolutionDir)packages\sdl.3.2.10\lib\x64;</AdditionalLibraryDirectories>
       <AdditionalDependencies>glew32s.lib;opengl32.lib;SDL3.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>

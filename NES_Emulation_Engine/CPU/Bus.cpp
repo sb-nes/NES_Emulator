@@ -39,13 +39,14 @@ namespace NES::CPU {
 						_dma_page = data;
 						_dma_address = 0x00;
 						_dma_enabled = true;
-					}
-					else if (address == 0x4016 || address == 0x4017) { // TODO: Fix Controllers
+					} else if (address == 0x4016 || address == 0x4017) { // TODO: Fix Controllers | Also, $4017 doesn't go to the controller
 						//_controller[0]->clock();
 						//_controller[0]->write(address, data & 0x01);
 						//_controller[1]->clock();
 						//_controller[1]->write(address, data & 0x01); 
-						controller_state[address & 0x01] = controller[address & 0x01];
+						controller_state[address & 0x01] = controller[address & 0x01]; // Snaps a shot of the controller state at given instant
+					} else {
+						_apu.write(address & 0x1F, data);
 					}
 				}
 			break; 
@@ -83,6 +84,8 @@ namespace NES::CPU {
 						u8 data = (controller_state[address & 0x0001] & 0x80) > 0;
 						controller_state[address & 0x0001] <<= 1;
 						return data;
+					} else {
+						return _apu.read();
 					}
 				}
 			break;
